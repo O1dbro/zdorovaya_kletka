@@ -474,6 +474,13 @@
             <option value="22">2/2 (норма 98 уроков)</option>
           </select>
         </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Норма занятий вручную <span style="font-size:10px;color:var(--muted)">(если пусто — авто)</span></span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="customNormInput" min="0" max="200" placeholder="авто" oninput="saveKPI()" style="width:76px">
+            <span class="kpi-unit">зан.</span>
+          </div>
+        </div>
         <!-- Разделитель занятий -->
         <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Занятия (акад. часов ÷ 3 = занятий)</div>
 
@@ -559,13 +566,25 @@
         </div>
 
         <!-- KPI выполнен -->
-        <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px">KPI</div>
+        <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px">KPI (+67₽/зан. при выполнении всех трёх)</div>
         <div class="kpi-row">
-          <span class="kpi-label">KPI выполнен <span style="font-size:10px;color:var(--muted)">+67₽ к каждому занятию</span></span>
+          <span class="kpi-label">Норма занятий выполнена <span style="font-size:10px;color:var(--muted)">(считается авто)</span></span>
+          <div id="kpiNormStatus" style="font-size:13px;font-weight:700;color:var(--muted)">—</div>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">5+ отзывов за месяц <span style="font-size:10px;color:var(--muted)">(считается авто)</span></span>
+          <div id="kpiReviewsStatus" style="font-size:13px;font-weight:700;color:var(--muted)">—</div>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">ПДД сдано в этом месяце</span>
           <select class="kpi-sel" id="kpiDoneSelect" onchange="saveKPI()">
-            <option value="0">Не выполнен</option>
-            <option value="1">✅ Выполнен (+67₽/зан.)</option>
+            <option value="0">❌ Не сдано</option>
+            <option value="1">✅ Сдано</option>
           </select>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label" style="font-weight:700">Итог KPI <span style="font-size:10px;color:var(--muted)">+67₽ к каждому занятию</span></span>
+          <div id="kpiDoneStatus" style="font-size:13px;font-weight:700;color:var(--muted)">—</div>
         </div>
         <div class="kpi-row">
           <span class="kpi-label">Отзывов за месяц</span>
@@ -624,6 +643,21 @@
             <option value="0">Нет</option>
             <option value="1">Да (+5 000₽)</option>
           </select>
+        </div>
+        <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px">Бонусы</div>
+        <div class="kpi-row">
+          <span class="kpi-label">Приведи друга инструктора <span style="font-size:10px;color:var(--muted)">+5 000₽ за каждого</span></span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="referralInstructorInput" min="0" max="10" placeholder="0" oninput="saveKPI()">
+            <span class="kpi-unit">чел.</span>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Приведи друга курсанта <span style="font-size:10px;color:var(--muted)">+1 000₽ за каждого</span></span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="referralStudentInput" min="0" max="50" placeholder="0" oninput="saveKPI()">
+            <span class="kpi-unit">чел.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -945,7 +979,7 @@ function emptyWeek() {
   return CRITERIA.map(c => Array(c.items.length).fill(false));
 }
 function emptyEmpData() { return Array.from({length:WEEKS}, () => emptyWeek()); }
-function emptyKPI() { return {schedule:'52', mainHours:0, gosHours:0, vngHours:0, extraHours:0, porucheniyaHours:0, nonStop:0, kpiDone:0, reviews:0, reviewsPhoto:0, rate:0, stage:0, senior:0, teamKpi:0, examiner:0, mentor:0, hireDate:'', branch:'Кирова', position:'mpov'}; }
+function emptyKPI() { return {schedule:'52', mainHours:0, gosHours:0, vngHours:0, extraHours:0, porucheniyaHours:0, nonStop:0, kpiDone:0, reviews:0, reviewsPhoto:0, rate:0, stage:0, senior:0, teamKpi:0, examiner:0, mentor:0, hireDate:'', branch:'Кирова', position:'mpov', customNorm:0, referralInstructor:0, referralStudent:0}; }
 
 // ===== CALCULATIONS =====
 function weekAvg(ei, wi) {
@@ -1023,7 +1057,14 @@ function calcMotiv(ei) {
   const reviews = parseInt(k.reviews) || 0;
   const reviewsPhoto = parseInt(k.reviewsPhoto) || 0;
   const nonStop = parseInt(k.nonStop) || 0;
-  const kpiDone = parseInt(k.kpiDone) || 0;
+  const pddDone = parseInt(k.kpiDone) || 0;
+  const reviewsOk = reviews >= 5;
+  const referralInstructor = parseInt(k.referralInstructor) || 0;
+  // Pre-calculate adjNorm for KPI check
+  const _fullNorm = sch === '52' ? 120 : 98;
+  const _customNorm = parseInt(k.customNorm) || 0;
+  const adjNorm = _customNorm > 0 ? _customNorm : _fullNorm;
+  const referralStudent = parseInt(k.referralStudent) || 0;
 
   // Считаем занятия из часов
   const mainL    = Math.floor((parseFloat(k.mainHours)||0) / 3 * 10) / 10;
@@ -1074,14 +1115,22 @@ function calcMotiv(ei) {
     total += nsTotal;
   }
 
-  // 5. KPI выполнен — +67₽ × все занятия (кроме нон-стопа)
-  if (kpiDone > 0 && allMainL > 0) {
+  // 5. KPI выполнен — +67₽/зан. если выполнены ВСЕ 3 условия
+  // Норма проверяется после расчёта adjNorm (в блоке депремирования)
+  // Здесь используем allMainL и adjNorm которые объявлены выше
+  const normOkForKPI = allMainL >= adjNorm && allMainL > 0;
+  const kpiOk = normOkForKPI && reviewsOk && pddDone > 0;
+  if (kpiOk && allMainL > 0) {
     const kpiBonus = 67 * allMainL;
     rows.push({label:'KPI выполнен', val:kpiBonus, type:'pos',
-      note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+      note:`+67₽/зан. × ${allMainL.toFixed(1)} зан. (норма ✓, отзывы ✓, ПДД ✓)`});
     total += kpiBonus;
-  } else if (kpiDone === 0) {
-    rows.push({label:'KPI', val:0, type:'neg', note:'Не выполнен — надбавка не начисляется'});
+  } else {
+    const missing = [];
+    if (!normOkForKPI) missing.push(`норма (${allMainL.toFixed(1)}/${adjNorm})`);
+    if (!reviewsOk) missing.push(`отзывы (${reviews}/5)`);
+    if (!pddDone) missing.push('ПДД');
+    rows.push({label:'KPI', val:0, type:'neg', note:'Не выполнен: ' + missing.join(', ')});
   }
 
   // 5. Здоровая клетка +67₽ × (осн.+ГОС+ВнГ+доп) при ≥90%
@@ -1101,11 +1150,10 @@ function calcMotiv(ei) {
   const totalNormL = allMainL;
   if (totalNormL > 0) {
     // Пропорциональная норма если мастер начал не с начала месяца
-    const fullNorm = sch === '52' ? 120 : 98;
-    let adjNorm = fullNorm;
-    let normCoefNote = '';
+    // adjNorm уже объявлен выше
+    let normCoefNote = _customNorm > 0 ? ` (норма задана вручную: ${adjNorm} зан.)` : '';
     const hireDate = _empProf.hireDate;
-    if (hireDate) {
+    if (hireDate && _customNorm === 0) {
       const hire = new Date(hireDate);
       // Parse curMonth like "Июнь 2026"
       const months = {'Январь':0,'Февраль':1,'Март':2,'Апрель':3,'Май':4,'Июнь':5,'Июль':6,'Август':7,'Сентябрь':8,'Октябрь':9,'Ноябрь':10,'Декабрь':11};
@@ -1143,8 +1191,22 @@ function calcMotiv(ei) {
       else                                              { deductPerL=200; normNote=`≤${Math.round(adjNorm*0.31)} зан. при 2/2 → −200₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
     }
     const delta = (bonusPerL - deductPerL) * totalNormL;
-    rows.push({label:'KPI (норма занятий)', val: delta, type: normType, note: normNote});
+    rows.push({label:'Депремирование (норма занятий)', val: delta, type: normType, note: normNote});
     total += delta;
+  }
+
+  // 5б. Реферальные бонусы
+  if (referralInstructor > 0) {
+    const refInstBonus = referralInstructor * 5000;
+    rows.push({label:'Приведи друга инструктора', val:refInstBonus, type:'pos',
+      note:`${referralInstructor} чел. × 5 000₽`});
+    total += refInstBonus;
+  }
+  if (referralStudent > 0) {
+    const refStudBonus = referralStudent * 1000;
+    rows.push({label:'Приведи друга курсанта', val:refStudBonus, type:'pos',
+      note:`${referralStudent} чел. × 1 000₽`});
+    total += refStudBonus;
   }
 
   // 6. Отзывы на площадках (2ГИС, Flamp, Яндекс, Дром, АвтоГАИ)
@@ -1191,7 +1253,7 @@ function calcMotiv(ei) {
   // 9. Командный KPI — +67₽ × все занятия (кроме нон-стопа)
   if (teamKpi > 0 && allMainL > 0) {
     const tkBonus = 67 * allMainL;
-    rows.push({label:'Командный KPI', val:tkBonus, type:'pos', note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+    rows.push({label:'Командный KPI старшего', val:tkBonus, type:'pos', note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
     total += tkBonus;
   }
 
@@ -1440,6 +1502,10 @@ function renderMaster() {
   document.getElementById('teamKpiSelect').value = k.teamKpi||0;
   document.getElementById('examinerSelect').value = k.examiner||0;
   document.getElementById('mentorSelect').value = k.mentor||0;
+  updateKPIStatusDisplay();
+  document.getElementById('customNormInput').value = k.customNorm||'';
+  document.getElementById('referralInstructorInput').value = k.referralInstructor||'';
+  document.getElementById('referralStudentInput').value = k.referralStudent||'';
 
   updateMasterUI();
 }
@@ -1479,6 +1545,9 @@ async function saveKPI() {
   k.teamKpi = parseInt(document.getElementById('teamKpiSelect').value)||0;
   k.examiner = parseInt(document.getElementById('examinerSelect').value)||0;
   k.mentor = parseInt(document.getElementById('mentorSelect').value)||0;
+  k.customNorm = parseInt(document.getElementById('customNormInput').value)||0;
+  k.referralInstructor = parseInt(document.getElementById('referralInstructorInput').value)||0;
+  k.referralStudent = parseInt(document.getElementById('referralStudentInput').value)||0;
   document.getElementById('masterScheduleLabel').textContent = 'График '+(k.schedule==='22'?'2/2':'5/2');
   await save();
   updateMasterUI();
@@ -2301,6 +2370,44 @@ async function resetPDDForEmp(empIdx) {
   }
   keysToRemove.forEach(key => localStorage.removeItem(key));
   toast(`✅ Тест ПДД сброшен — мастер может пройти заново`);
+}
+
+// ===== KPI STATUS DISPLAY =====
+function updateKPIStatusDisplay() {
+  if (curEmp < 0) return;
+  const k = (state.kpi[curMonth] && state.kpi[curMonth][curEmp]) ? state.kpi[curMonth][curEmp] : emptyKPI();
+  const reviews = parseInt(k.reviews) || 0;
+  const pddDone = parseInt(k.kpiDone) || 0;
+  
+  // Calc norm
+  const sch = k.schedule || '52';
+  const fullNorm = sch === '52' ? 120 : 98;
+  const customNorm = parseInt(k.customNorm) || 0;
+  const adjNorm = customNorm > 0 ? customNorm : fullNorm;
+  
+  const mainL = Math.floor((parseFloat(k.mainHours)||0) / 3 * 10) / 10;
+  const gosL = Math.floor((parseFloat(k.gosHours)||0) / 3 * 10) / 10;
+  const vngL = Math.floor((parseFloat(k.vngHours)||0) / 3 * 10) / 10;
+  const extraL = Math.floor((parseFloat(k.extraHours)||0) / 2 * 10) / 10;
+  const porL = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
+  const totalL = mainL + gosL + vngL + extraL + porL;
+  const normOk = totalL >= adjNorm && totalL > 0;
+  const reviewsOk = reviews >= 5;
+  const allOk = normOk && reviewsOk && pddDone > 0;
+
+  const normEl = document.getElementById('kpiNormStatus');
+  const revEl = document.getElementById('kpiReviewsStatus');
+  const doneEl = document.getElementById('kpiDoneStatus');
+  
+  if (normEl) normEl.innerHTML = normOk 
+    ? `<span style="color:var(--green)">✅ ${totalL.toFixed(1)} / ${adjNorm}</span>`
+    : `<span style="color:var(--red)">❌ ${totalL.toFixed(1)} / ${adjNorm}</span>`;
+  if (revEl) revEl.innerHTML = reviewsOk
+    ? `<span style="color:var(--green)">✅ ${reviews} отзывов</span>`
+    : `<span style="color:var(--red)">❌ ${reviews} / 5</span>`;
+  if (doneEl) doneEl.innerHTML = allOk
+    ? `<span style="color:var(--green)">✅ Выполнен</span>`
+    : `<span style="color:var(--red)">❌ Не выполнен</span>`;
 }
 
 // ===== TOAST =====
