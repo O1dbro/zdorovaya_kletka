@@ -1619,6 +1619,8 @@ async function loadPDDResultsForAdmin(empIdx) {
     snap.docs.forEach(doc => {
       try { localStorage.setItem(doc.id, JSON.stringify(doc.data())); } catch(e) {}
     });
+    // Re-render weeks after PDD data loaded
+    if (curEmp === empIdx) updateMasterUI();
   } catch(e) { console.warn('PDD admin load error:', e); }
 }
 
@@ -1671,7 +1673,7 @@ function _updateMasterUI() {
         const r = JSON.parse(pddData);
         pddTag = r.passed 
           ? `<div style="font-size:10px;font-weight:700;color:var(--green);margin-top:4px">✅ ПДД сдан</div>`
-          : `<div style="font-size:10px;font-weight:700;color:var(--red);margin-top:4px">❌ ПДД не сдан</div>`;
+          : ''; // не показываем "не сдан" — видно в чекбоксе
       }
     } catch(e) {}
     // (badge shown in week card below)
@@ -2436,6 +2438,8 @@ async function resetPDDForEmp(empIdx) {
   }
   keysToRemove.forEach(key => localStorage.removeItem(key));
   toast(`✅ Тест ПДД сброшен — мастер может пройти заново`);
+  // Re-render to update checkboxes
+  if (curEmp >= 0) renderMaster();
 }
 
 // ===== KPI STATUS DISPLAY =====
@@ -2769,7 +2773,7 @@ function renderCabinet() {
         const r = JSON.parse(stored);
         pddBadge = r.passed 
           ? '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>'
-          : '<span style="font-size:11px;font-weight:700;color:var(--red)">❌ ПДД не сдан</span>';
+          : ''; // не показываем "не сдан" — видно в чекбоксе
       }
     } catch(e) {}
     html += `<div class="cab-week-card ${wCls}" onclick="cabShowWeek(${w})">
