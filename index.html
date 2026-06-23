@@ -1345,8 +1345,14 @@ function renderBranch() {
 function openMaster(ei) {
   curEmp = ei; curWeek = -1;
   document.getElementById('viewDash').classList.remove('active');
+  document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewMaster').classList.add('active');
   renderMaster();
+  // Scroll to master data block after render
+  setTimeout(() => {
+    const target = document.getElementById('moneyBlock') || document.getElementById('weeksGrid');
+    if (target) target.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }, 100);
 }
 function showDash() {
   document.getElementById('viewMaster').classList.remove('active');
