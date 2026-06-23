@@ -1100,20 +1100,47 @@ function calcMotiv(ei) {
   // 6. KPI норма — считаем по всем занятиям (осн+ГОС+ВнГ+доп+поручения)
   const totalNormL = allMainL;
   if (totalNormL > 0) {
+    // Пропорциональная норма если мастер начал не с начала месяца
+    const fullNorm = sch === '52' ? 120 : 98;
+    let adjNorm = fullNorm;
+    let normCoefNote = '';
+    const hireDate = _empProf.hireDate;
+    if (hireDate) {
+      const hire = new Date(hireDate);
+      // Parse curMonth like "Июнь 2026"
+      const months = {'Январь':0,'Февраль':1,'Март':2,'Апрель':3,'Май':4,'Июнь':5,'Июль':6,'Август':7,'Сентябрь':8,'Октябрь':9,'Ноябрь':10,'Декабрь':11};
+      const parts = curMonth.split(' ');
+      const mIdx = months[parts[0]];
+      const yr = parseInt(parts[1]);
+      if (!isNaN(mIdx) && !isNaN(yr)) {
+        const monthStart = new Date(yr, mIdx, 1);
+        const monthEnd = new Date(yr, mIdx + 1, 0);
+        const daysInMonth = monthEnd.getDate();
+        // If hired this month
+        if (hire >= monthStart && hire <= monthEnd) {
+          const daysWorked = daysInMonth - hire.getDate() + 1;
+          const coef = daysWorked / daysInMonth;
+          adjNorm = Math.round(fullNorm * coef);
+          normCoefNote = ` (с ${hire.getDate()} числа, норма ${adjNorm} зан.)`;
+        }
+      }
+    }
+
     let bonusPerL=0, deductPerL=0, normNote='', normType='neu';
     if (sch==='52') {
-      if (totalNormL >= 150) { bonusPerL=67; normNote=`Выкатка >150 зан. → +67₽/зан. × ${totalNormL}`; normType='pos'; }
-      else if (totalNormL >= 120) { normNote=`Норма 5/2 выполнена (≥120 зан.)`; normType='neu'; }
-      else if (totalNormL >= 95)  { deductPerL=27;  normNote=`<120 зан. при 5/2 → −27₽/зан. × ${totalNormL}`;  normType='neg'; }
-      else if (totalNormL >= 70)  { deductPerL=67;  normNote=`<95 зан. при 5/2 → −67₽/зан. × ${totalNormL}`;  normType='neg'; }
-      else if (totalNormL >= 45)  { deductPerL=134; normNote=`<70 зан. при 5/2 → −134₽/зан. × ${totalNormL}`; normType='neg'; }
-      else                        { deductPerL=200; normNote=`<45 зан. при 5/2 → −200₽/зан. × ${totalNormL}`; normType='neg'; }
+      const over = adjNorm + 30; // порог выкатки
+      if (totalNormL >= over)    { bonusPerL=67; normNote=`Выкатка >${over} зан. → +67₽/зан. × ${totalNormL}${normCoefNote}`; normType='pos'; }
+      else if (totalNormL >= adjNorm)    { normNote=`Норма 5/2 выполнена (≥${adjNorm} зан.)${normCoefNote}`; normType='neu'; }
+      else if (totalNormL >= Math.round(adjNorm*0.79)) { deductPerL=27;  normNote=`<${adjNorm} зан. при 5/2 → −27₽/зан. × ${totalNormL}${normCoefNote}`;  normType='neg'; }
+      else if (totalNormL >= Math.round(adjNorm*0.58)) { deductPerL=67;  normNote=`<${Math.round(adjNorm*0.79)} зан. при 5/2 → −67₽/зан. × ${totalNormL}${normCoefNote}`;  normType='neg'; }
+      else if (totalNormL >= Math.round(adjNorm*0.37)) { deductPerL=134; normNote=`<${Math.round(adjNorm*0.58)} зан. при 5/2 → −134₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
+      else                        { deductPerL=200; normNote=`<${Math.round(adjNorm*0.37)} зан. при 5/2 → −200₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
     } else {
-      if (totalNormL >= 98)      { normNote=`Норма 2/2 выполнена (≥98 зан.)`; normType='neu'; }
-      else if (totalNormL >= 80) { deductPerL=67;  normNote=`<98 зан. при 2/2 → −67₽/зан. × ${totalNormL}`;  normType='neg'; }
-      else if (totalNormL >= 55) { deductPerL=67;  normNote=`≤80 зан. при 2/2 → −67₽/зан. × ${totalNormL}`;  normType='neg'; }
-      else if (totalNormL >= 30) { deductPerL=134; normNote=`≤55 зан. при 2/2 → −134₽/зан. × ${totalNormL}`; normType='neg'; }
-      else                       { deductPerL=200; normNote=`≤30 зан. при 2/2 → −200₽/зан. × ${totalNormL}`; normType='neg'; }
+      if (totalNormL >= adjNorm)                       { normNote=`Норма 2/2 выполнена (≥${adjNorm} зан.)${normCoefNote}`; normType='neu'; }
+      else if (totalNormL >= Math.round(adjNorm*0.82)) { deductPerL=67;  normNote=`<${adjNorm} зан. при 2/2 → −67₽/зан. × ${totalNormL}${normCoefNote}`;  normType='neg'; }
+      else if (totalNormL >= Math.round(adjNorm*0.56)) { deductPerL=67;  normNote=`≤${Math.round(adjNorm*0.82)} зан. при 2/2 → −67₽/зан. × ${totalNormL}${normCoefNote}`;  normType='neg'; }
+      else if (totalNormL >= Math.round(adjNorm*0.31)) { deductPerL=134; normNote=`≤${Math.round(adjNorm*0.56)} зан. при 2/2 → −134₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
+      else                                              { deductPerL=200; normNote=`≤${Math.round(adjNorm*0.31)} зан. при 2/2 → −200₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
     }
     const delta = (bonusPerL - deductPerL) * totalNormL;
     rows.push({label:'KPI (норма занятий)', val: delta, type: normType, note: normNote});
