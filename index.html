@@ -1484,8 +1484,8 @@ function showBranch() {
   renderBranch();
 }
 
-function renderMaster() {
-  loadPDDResultsForAdmin(curEmp);
+async function renderMaster() {
+  await loadPDDResultsForAdmin(curEmp);
   const name = state.employees[curEmp];
   const k = getKPI();
   document.getElementById('masterName').textContent = name;
