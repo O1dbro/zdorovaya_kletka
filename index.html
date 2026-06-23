@@ -1964,7 +1964,7 @@ async function loadPDDQuestions() {
         q: item.question,
         a: item.answers.map(a => a.answer_text),
         c: item.answers.findIndex(a => a.is_correct),
-        img: item.image ? BASE + item.image.replace('./images/', 'images/') : null
+        img: item.image ? BASE + item.image.replace('./', '') : null
       }))
       .filter(item => item.c >= 0);
     // Remove duplicates by question text
