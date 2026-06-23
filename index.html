@@ -1710,7 +1710,18 @@ function renderCriteria() {
   const critWeight = 100 / CRITERIA.length;
 
   CRITERIA.forEach((c, ci) => {
-    const checks = (row[ci] && row[ci].length === c.items.length) ? row[ci] : Array(c.items.length).fill(false);
+    let checks = (row[ci] && row[ci].length === c.items.length) ? [...row[ci]] : Array(c.items.length).fill(false);
+    // For PDD section (ci=0), override first item based on actual PDD test result
+    if (ci === 0) {
+      const pddKey = getPDDWeekKey(curEmp, curWeek);
+      let pddResult = null;
+      try { pddResult = JSON.parse(localStorage.getItem(pddKey)); } catch(e) {}
+      if (pddResult === null) {
+        checks[0] = false; // No attempt - not passed
+      } else {
+        checks[0] = pddResult.passed === true;
+      }
+    }
     const itemWeight = critWeight / c.items.length;
     const earned = checks.filter(Boolean).length * itemWeight;
     const critPct = Math.round(earned * 10) / 10;
@@ -1742,6 +1753,8 @@ function renderCriteria() {
         const pddKey = getPDDWeekKey(curEmp, curWeek);
         let pddResult = null;
         try { pddResult = JSON.parse(localStorage.getItem(pddKey)); } catch(e) {}
+        // Reset label class - don't use checks[ii] for PDD
+        label.className = 'crit-item-label';
         
         let pddIcon = '', pddStyle = '', pddClass = '';
         if (pddResult === null) {
@@ -1765,8 +1778,8 @@ function renderCriteria() {
         `;
         label.style.pointerEvents = 'none';
         label.style.cursor = 'default';
-        if (pddStyle) label.style.cssText += ';' + pddStyle;
-        if (pddClass) label.className += pddClass;
+        if (pddStyle) label.style.background = pddResult && !pddResult.passed ? 'var(--red-bg)' : '';
+        label.className = 'crit-item-label' + pddClass;
       } else {
         label.innerHTML = `
           <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}">
