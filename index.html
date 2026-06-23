@@ -1736,12 +1736,17 @@ function renderCriteria() {
       // PDD checkbox (ci=0, ii=0) - auto only, block manual editing
       const isPDDCheck = ci === 0 && ii === 0;
       label.innerHTML = `
-        <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}" ${isPDDCheck ? 'disabled style="pointer-events:none;opacity:.6"' : ''}>
+        <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}">
         <span class="cb-box"></span>
         <span class="cb-text">${itemName}${isPDDCheck ? ' <span style="font-size:10px;color:var(--muted)">(авто)</span>' : ''}</span>
         <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
       `;
-      if (!isPDDCheck) {
+      if (isPDDCheck) {
+        // Block all clicks on PDD checkbox
+        label.style.pointerEvents = 'none';
+        label.style.opacity = '0.7';
+        label.style.cursor = 'default';
+      } else {
         label.querySelector('input').addEventListener('change', (e) => {
           updateCritCheck(ci, ii, e.target.checked);
           label.className = 'crit-item-label' + (e.target.checked ? ' checked' : '');
