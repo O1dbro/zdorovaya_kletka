@@ -449,6 +449,7 @@
         <div class="mschedule" id="masterScheduleLabel">—</div>
         <div class="mhdr-actions">
           <button class="btn btn-ghost btn-sm" onclick="openEditEmp(curEmp)">✏️ Редактировать</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetPDDForEmp(curEmp)">🔄 Сброс ПДД</button>
     <button class="btn btn-ghost btn-sm" onclick="deleteCurrentEmp()">🗑 Удалить</button>
           <button class="btn btn-green btn-sm" onclick="exportCSV()">📊 Экспорт</button>
         </div>
@@ -2083,7 +2084,17 @@ async function openPDD() {
 }
 
 function closePDD() {
-  if (pddTimer) clearInterval(pddTimer);
+  // If test is in progress - count as failed
+  if (pddTimer && pddQuestions.length > 0) {
+    clearInterval(pddTimer);
+    pddTimer = null;
+    const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
+    const correct = pddAnswers.filter((a, i) => i < pddCurrent && a === pddQuestions[i].c).length;
+    const result = {correct, passed: false, date: new Date().toISOString(), week: pddWeekIdx, aborted: true};
+    try { localStorage.setItem(key, JSON.stringify(result)); } catch(e) {}
+    toast('❌ Тест закрыт — засчитан как не сданный');
+  }
+  pddQuestions = [];
   document.getElementById('pddScreen').classList.remove('active');
 }
 
@@ -2202,6 +2213,21 @@ async function autoSetPDDCheckbox(empIdx, weekIdx) {
   await save();
 }
 
+
+// ===== PDD RESET =====
+function resetPDDForEmp(empIdx) {
+  if (!confirm('Сбросить результат теста ПДД для этого мастера? Он сможет пройти тест заново.')) return;
+  // Find all PDD keys for this employee and remove them
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(`pdd_${empIdx}_`)) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+  toast(`✅ Тест ПДД сброшен — мастер может пройти заново`);
+}
 
 // ===== TOAST =====
 function toast(msg){const c=document.getElementById('toastC');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},3000);}
