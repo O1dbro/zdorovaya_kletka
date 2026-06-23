@@ -1344,19 +1344,19 @@ function renderBranch() {
 // ===== MASTER VIEW =====
 function openMaster(ei) {
   curEmp = ei; curWeek = -1;
+  window.scrollTo(0, 0);
   document.getElementById('viewDash').classList.remove('active');
   document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewMaster').classList.add('active');
   renderMaster();
-  // Scroll to master data
-  window.scrollTo(0, 0);
-  setTimeout(() => {
-    const mhdr = document.querySelector('.mhdr');
-    if (mhdr) {
-      const h = mhdr.getBoundingClientRect().height + mhdr.offsetTop;
-      window.scrollTo({top: h, behavior: 'smooth'});
-    }
-  }, 300);
+}
+
+function scrollToMasterData() {
+  const target = document.querySelector('#viewMaster .mhdr');
+  if (target) {
+    const h = target.offsetTop + target.offsetHeight;
+    window.scrollTo({top: h, behavior: 'smooth'});
+  }
 }
 function showDash() {
   document.getElementById('viewMaster').classList.remove('active');
@@ -1468,6 +1468,8 @@ async function saveKPI() {
 function updateMasterUI() {
   try {
     _updateMasterUI();
+    // Scroll after render complete
+    setTimeout(scrollToMasterData, 100);
   } catch(e) {
     console.error('updateMasterUI error:', e);
     // Показываем базовый интерфейс даже при ошибке
