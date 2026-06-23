@@ -1348,14 +1348,15 @@ function openMaster(ei) {
   document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewMaster').classList.add('active');
   renderMaster();
-  // Scroll to master data block after render
+  // Scroll to master data
+  window.scrollTo(0, 0);
   setTimeout(() => {
-    const target = document.getElementById('moneyBlock') || document.getElementById('weeksGrid');
-    if (target) {
-      const y = target.getBoundingClientRect().top + window.scrollY - 20;
-      window.scrollTo({top: y, behavior: 'smooth'});
+    const mhdr = document.querySelector('.mhdr');
+    if (mhdr) {
+      const h = mhdr.getBoundingClientRect().height + mhdr.offsetTop;
+      window.scrollTo({top: h, behavior: 'smooth'});
     }
-  }, 200);
+  }, 300);
 }
 function showDash() {
   document.getElementById('viewMaster').classList.remove('active');
