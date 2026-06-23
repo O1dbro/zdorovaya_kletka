@@ -375,6 +375,26 @@
   .pdd-locked-icon{font-size:48px;margin-bottom:16px;}
   .pdd-locked-title{font-size:20px;font-weight:800;margin-bottom:8px;}
   .pdd-locked-sub{font-size:14px;color:var(--muted);}
+
+  /* MOBILE HEADER */
+  .hdr-menu-btn{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;align-items:center;justify-content:center;flex-shrink:0;}
+  .hdr-dropdown{display:none;position:fixed;top:64px;left:0;right:0;background:#1a1d2e;z-index:999;padding:12px;flex-direction:column;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+  .hdr-dropdown.open{display:flex;}
+  .hdr-dropdown .btn{width:100%;justify-content:center;padding:12px;}
+
+  @media (max-width: 768px) {
+    .hdr{padding:0 16px;}
+    .hdr-nav{display:none;}
+    .hdr-menu-btn{display:flex;}
+    .hdr-logo-text .hdr-s{display:none;}
+    .branch-grid{grid-template-columns:1fr!important;}
+    .emp-grid{grid-template-columns:1fr!important;}
+    .sc-grid{grid-template-columns:repeat(2,1fr)!important;}
+    .kpi-grid{grid-template-columns:1fr!important;}
+    .master-hdr-stats{grid-template-columns:repeat(2,1fr)!important;}
+    .money-block{border-radius:12px;}
+    .weeks-grid{grid-template-columns:repeat(3,1fr)!important;}
+  }
 </style>
 </head>
 <body>
@@ -389,6 +409,7 @@
 </svg></div>
     <div><div class="hdr-t">Вектор · Здоровая клетка</div><div class="hdr-s">Мониторинг МПОВ</div></div>
   </div>
+  <button class="hdr-menu-btn" onclick="toggleMobileMenu()" id="menuBtn">☰</button>
   <div class="hdr-nav">
     <button class="btn btn-ghost" style="font-size:12px;opacity:.7" onclick="if(confirm('Сбросить ВСЕ данные? Мастера и оценки будут удалены.'))resetAllData()">🗑 Сброс</button>
     <button class="btn btn-ghost" onclick="openAddMonthModal()">📅 Новый месяц</button>
@@ -400,6 +421,16 @@
     <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImportFile(event)">
   </div>
 </header>
+<!-- MOBILE DROPDOWN -->
+<div class="hdr-dropdown" id="hdrDropdown">
+  <button class="btn btn-ghost" onclick="closeMobileMenu();openAddMonthModal()">📅 Новый месяц</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();importJSON()">📥 Импорт</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();exportJSON()">💾 Бэкап</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();openBulkCreateModal()">👥 Создать аккаунты</button>
+  <button class="btn btn-green" onclick="closeMobileMenu();exportCSV()">📊 Экспорт Excel</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();if(confirm('Сбросить ВСЕ данные?'))resetAllData()">🗑 Сброс</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();doLogout()">🚪 Выйти</button>
+</div>
 
 <div class="main" style="display:none">
 
@@ -1702,16 +1733,20 @@ function renderCriteria() {
     c.items.forEach((itemName, ii) => {
       const label = document.createElement('label');
       label.className = 'crit-item-label' + (checks[ii] ? ' checked' : '');
+      // PDD checkbox (ci=0, ii=0) - auto only, block manual editing
+      const isPDDCheck = ci === 0 && ii === 0;
       label.innerHTML = `
-        <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}">
+        <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}" ${isPDDCheck ? 'disabled style="pointer-events:none;opacity:.6"' : ''}>
         <span class="cb-box"></span>
-        <span class="cb-text">${itemName}</span>
+        <span class="cb-text">${itemName}${isPDDCheck ? ' <span style="font-size:10px;color:var(--muted)">(авто)</span>' : ''}</span>
         <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
       `;
-      label.querySelector('input').addEventListener('change', (e) => {
-        updateCritCheck(ci, ii, e.target.checked);
-        label.className = 'crit-item-label' + (e.target.checked ? ' checked' : '');
-      });
+      if (!isPDDCheck) {
+        label.querySelector('input').addEventListener('change', (e) => {
+          updateCritCheck(ci, ii, e.target.checked);
+          label.className = 'crit-item-label' + (e.target.checked ? ' checked' : '');
+        });
+      }
       itemsWrap.appendChild(label);
     });
     section.appendChild(itemsWrap);
@@ -2409,6 +2444,18 @@ function updateKPIStatusDisplay() {
   if (doneEl) doneEl.innerHTML = allOk
     ? `<span style="color:var(--green)">✅ Выполнен</span>`
     : `<span style="color:var(--red)">❌ Не выполнен</span>`;
+}
+
+// ===== MOBILE MENU =====
+function toggleMobileMenu() {
+  const dd = document.getElementById('hdrDropdown');
+  const btn = document.getElementById('menuBtn');
+  dd.classList.toggle('open');
+  btn.textContent = dd.classList.contains('open') ? '✕' : '☰';
+}
+function closeMobileMenu() {
+  document.getElementById('hdrDropdown').classList.remove('open');
+  document.getElementById('menuBtn').textContent = '☰';
 }
 
 // ===== TOAST =====
