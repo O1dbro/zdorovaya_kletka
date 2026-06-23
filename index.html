@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Здоровая клетка — МПОВ · Вектор</title>
+<style>
+  :root {
+    --red:#C8102E; --red-dark:#9b0d23; --red-light:#f5e6e9;
+    --bg:#f7f8fc; --border:#e8eaf0; --text:#1a1d2e; --muted:#6b7280;
+    --green:#16a34a; --green-bg:#dcfce7;
+    --yellow:#d97706; --yellow-bg:#fef3c7;
+    --red-bg:#fee2e2;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+    --shadow-lg:0 8px 32px rgba(0,0,0,.12);
+    --r:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica','Arial',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* HEADER */
+  .hdr{background:linear-gradient(135deg,#1a1d2e,#2d3155);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.2);}
+  .hdr-logo{display:flex;align-items:center;gap:12px;}
+  .hdr-v{width:44px;height:44px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:4px;}
+  .hdr-t{font-size:15px;font-weight:700;color:#fff;line-height:1.2;}
+  .hdr-s{font-size:11px;color:rgba(255,255,255,.45);font-weight:400;}
+  .hdr-nav{display:flex;align-items:center;gap:8px;}
+
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .15s;}
+  .btn-ghost{background:rgba(255,255,255,.1);color:#fff;} .btn-ghost:hover{background:rgba(255,255,255,.18);}
+  .btn-red{background:var(--red);color:#fff;} .btn-red:hover{background:var(--red-dark);transform:translateY(-1px);}
+  .btn-green{background:var(--green);color:#fff;} .btn-green:hover{background:#15803d;transform:translateY(-1px);}
+  .btn-outline{background:#fff;color:var(--text);border:1.5px solid var(--border);} .btn-outline:hover{border-color:var(--red);color:var(--red);}
+  .btn-sm{padding:5px 12px;font-size:12px;}
+
+  .main{max-width:1300px;margin:0 auto;padding:28px 20px;}
+  .view{display:none;} .view.active{display:block;}
+
+  /* DASHBOARD */
+  .dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+  .dash-title{font-size:26px;font-weight:800;} .dash-title span{color:var(--red);}
+  .month-ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .msel{padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-family:inherit;font-weight:600;background:#fff;color:var(--text);cursor:pointer;min-width:160px;}
+  .msel:focus{outline:2px solid var(--red);border-color:transparent;}
+
+  .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:26px;}
+  .sc{background:#fff;border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1.5px solid var(--border);}
+  .sc-label{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .sc-val{font-size:30px;font-weight:800;line-height:1;}
+  .sc-val.green{color:var(--green);} .sc-val.yellow{color:var(--yellow);} .sc-val.red{color:var(--red);}
+
+  .sec-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+  /* BRANCH CARDS */
+  .branch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:8px;}
+  .branch-card{background:#fff;border-radius:var(--r);padding:22px 24px;box-shadow:var(--shadow);border:1.5px solid var(--border);cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+  .branch-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;}
+  .branch-card.green::after{background:var(--green);} .branch-card.yellow::after{background:var(--yellow);} .branch-card.red::after{background:var(--red);} .branch-card.empty::after{background:#e5e7eb;}
+  .branch-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--red);}
+  .branch-icon{font-size:28px;margin-bottom:10px;}
+  .branch-name{font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;}
+  .branch-meta{font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .branch-avg{font-size:32px;font-weight:900;line-height:1;}
+  .branch-avg.green{color:var(--green);} .branch-avg.yellow{color:var(--yellow);} .branch-avg.red{color:var(--red);} .branch-avg.empty{color:#d1d5db;}
+  .branch-bar{height:5px;background:#f3f4f6;border-radius:3px;margin:10px 0;}
+  .branch-bar-fill{height:100%;border-radius:3px;}
+  .branch-bar-fill.green{background:var(--green);} .branch-bar-fill.yellow{background:var(--yellow);} .branch-bar-fill.red{background:var(--red);}
+  .branch-stats{display:flex;gap:10px;margin-top:10px;}
+  .branch-stat{flex:1;text-align:center;padding:6px;border-radius:8px;background:#f8fafc;}
+  .branch-stat .bsv{font-size:16px;font-weight:800;} .branch-stat .bsl{font-size:10px;color:var(--muted);font-weight:500;}
+  .branch-open{font-size:11px;color:var(--red);font-weight:600;margin-top:12px;display:block;}
+  /* BRANCH DETAIL */
+  .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  .emp-card{background:#fff;border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow);border:1.5px solid var(--border);cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+  .emp-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;}
+  .emp-card.green::before{background:var(--green);} .emp-card.yellow::before{background:var(--yellow);} .emp-card.red::before{background:var(--red);} .emp-card.empty::before{background:#d1d5db;}
+  .emp-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--red);}
+  .emp-del-btn{width:26px;height:26px;border-radius:50%;border:none;background:#fee2e2;color:#ef4444;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+  .emp-del-btn:hover{background:#ef4444;color:#fff;transform:scale(1.1);}
+  .ec-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+  .ec-name{font-size:13px;font-weight:700;line-height:1.3;}
+  .ec-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .ec-avg{font-size:22px;font-weight:900;}
+  .ec-avg.green{color:var(--green);} .ec-avg.yellow{color:var(--yellow);} .ec-avg.red{color:var(--red);} .ec-avg.empty{color:#9ca3af;}
+  .ec-weeks{display:flex;gap:5px;margin-top:8px;}
+  .wp{flex:1;text-align:center;padding:5px 3px;border-radius:7px;}
+  .wp .wl{color:var(--muted);font-size:9px;font-weight:500;} .wp .wv{font-size:12px;font-weight:800;}
+  .wp.green{background:var(--green-bg);} .wp.green .wv{color:var(--green);}
+  .wp.yellow{background:var(--yellow-bg);} .wp.yellow .wv{color:var(--yellow);}
+  .wp.red{background:var(--red-bg);} .wp.red .wv{color:var(--red);}
+  .wp.empty{background:#f3f4f6;} .wp.empty .wv{color:#9ca3af;}
+  .prog-wrap{height:5px;background:#f3f4f6;border-radius:3px;overflow:hidden;margin-top:8px;}
+  .prog-fill{height:100%;border-radius:3px;transition:width .4s;}
+  .prog-fill.green{background:var(--green);} .prog-fill.yellow{background:var(--yellow);} .prog-fill.red{background:var(--red);}
+  .ec-money{font-size:12px;font-weight:700;margin-top:8px;padding:5px 10px;border-radius:20px;display:inline-block;}
+  .ec-money.pos{background:var(--green-bg);color:var(--green);} .ec-money.neg{background:var(--red-bg);color:var(--red);} .ec-money.neu{background:#f3f4f6;color:var(--muted);}
+  .ec-open{font-size:11px;color:var(--red);font-weight:600;margin-top:8px;display:block;}
+
+  .add-row{display:flex;gap:10px;margin-top:18px;align-items:center;flex-wrap:wrap;}
+  .inp{padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-family:inherit;background:#fff;color:var(--text);}
+  .inp:focus{outline:2px solid var(--red);border-color:transparent;}
+
+  /* MASTER VIEW */
+  .back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;transition:color .15s;}
+  .back-btn:hover{color:var(--red);}
+
+  .mhdr{background:linear-gradient(135deg,#1a1d2e,#2d3155);border-radius:var(--r);padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .mhdr-info .mn{font-size:22px;font-weight:800;color:#fff;margin-bottom:3px;}
+  .mhdr-info .ms{font-size:13px;color:rgba(255,255,255,.45);}
+  .mhdr-info .mschedule{display:inline-block;margin-top:10px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;}
+  .mhdr-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .avg-circle{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);flex-shrink:0;}
+  .avg-circle .an{font-size:24px;font-weight:900;line-height:1;}
+  .avg-circle .al{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;}
+  .avg-circle.green .an{color:#4ade80;} .avg-circle.yellow .an{color:#fbbf24;} .avg-circle.red .an{color:#f87171;} .avg-circle.empty .an{color:rgba(255,255,255,.3);}
+
+  /* Months summary blocks */
+  .weeks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+  .wnc{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border:2px solid var(--border);cursor:pointer;transition:all .2s;text-align:center;}
+  .wnc:hover,.wnc.sel{border-color:var(--red);box-shadow:var(--shadow-lg);}
+  .wnc .wnt{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+  .wnc .wnd{font-size:10px;color:#9ca3af;margin-bottom:8px;}
+  .wnc .wnp{font-size:28px;font-weight:900;}
+  .wnc .wnp.green{color:var(--green);} .wnc .wnp.yellow{color:var(--yellow);} .wnc .wnp.red{color:var(--red);} .wnc .wnp.empty{color:#d1d5db;}
+
+  /* Criteria */
+  .crit-panel{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);border:1.5px solid var(--border);overflow:hidden;margin-bottom:22px;}
+  .crit-head{background:linear-gradient(135deg,var(--red),var(--red-dark));padding:14px 22px;display:flex;align-items:center;justify-content:space-between;}
+  .crit-head h3{color:#fff;font-size:14px;font-weight:700;}
+  .wavg-badge{background:rgba(255,255,255,.2);color:#fff;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:800;}
+  .ci{display:flex;align-items:center;padding:12px 22px;border-bottom:1px solid var(--border);gap:14px;transition:background .15s;}
+  .ci:last-child{border-bottom:none;} .ci:hover{background:#fafafa;}
+  .cnum{width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .cname{flex:1;font-size:13px;font-weight:600;} .cname small{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:1px;}
+  /* CHECKBOX CRITERIA */
+  .crit-section{border-bottom:1px solid var(--border);}
+  .crit-section:last-child{border-bottom:none;}
+  .crit-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;}
+  .cname-main{font-size:14px;font-weight:700;color:var(--text);}
+  .crit-pct-badge{padding:4px 12px;border-radius:20px;font-size:13px;font-weight:800;}
+  .crit-pct-badge.green{background:var(--green-bg);color:var(--green);}
+  .crit-pct-badge.yellow{background:var(--yellow-bg);color:var(--yellow);}
+  .crit-pct-badge.empty{background:#f3f4f6;color:#9ca3af;}
+  .crit-items{padding:0 20px 14px 58px;display:flex;flex-direction:column;gap:7px;}
+  .crit-item-label{display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);transition:all .15s;background:#fafafa;}
+  .crit-item-label:hover{border-color:var(--red);background:#fff;}
+  .crit-item-label.checked{border-color:var(--green);background:var(--green-bg);}
+  .crit-item-label input[type=checkbox]{display:none;}
+  .cb-box{width:22px;height:22px;border-radius:6px;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;background:#fff;}
+  .crit-item-label.checked .cb-box{background:var(--green);border-color:var(--green);}
+  .crit-item-label.checked .cb-box::after{content:'✓';color:#fff;font-size:14px;font-weight:900;}
+  .cb-text{flex:1;font-size:13px;font-weight:500;color:var(--text);line-height:1.4;}
+  .crit-item-label.checked .cb-text{color:#15803d;font-weight:600;}
+  .cb-weight{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;background:#f3f4f6;padding:2px 7px;border-radius:10px;}
+
+  /* Motivation calc */
+  .motiv-banner{border-radius:var(--r);padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:14px;}
+  .motiv-banner.green{background:var(--green-bg);border:1.5px solid #86efac;}
+  .motiv-banner.yellow{background:var(--yellow-bg);border:1.5px solid #fcd34d;}
+  .motiv-banner.red{background:var(--red-bg);border:1.5px solid #fca5a5;}
+  .motiv-banner.empty{background:#f3f4f6;border:1.5px solid var(--border);}
+  .mi{font-size:30px;}
+  .mt .mtt{font-size:15px;font-weight:800;margin-bottom:3px;}
+  .motiv-banner.green .mtt{color:var(--green);} .motiv-banner.yellow .mtt{color:var(--yellow);}
+  .motiv-banner.red .mtt{color:var(--red);} .motiv-banner.empty .mtt{color:var(--muted);}
+  .mt .mts{font-size:12px;color:var(--muted);}
+
+  /* KPI calc card */
+  .kpi-card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);border:1.5px solid var(--border);padding:22px;margin-bottom:22px;}
+  .kpi-card h3{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .kpi-row{display:flex;flex-direction:column;gap:4px;}
+  .lessons-out{font-size:14px;font-weight:800;color:var(--red);min-width:54px;}
+  .kpi-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .kpi-inp-wrap{display:flex;align-items:center;gap:6px;}
+  .kpi-inp{padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-weight:700;font-family:inherit;width:100%;}
+  .kpi-inp:focus{outline:2px solid var(--red);border-color:transparent;}
+  .kpi-unit{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .kpi-sel{padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-weight:600;font-family:inherit;width:100%;background:#fff;cursor:pointer;}
+  .kpi-sel:focus{outline:2px solid var(--red);border-color:transparent;}
+
+  /* Money breakdown */
+  .money-block{background:linear-gradient(135deg,#1a1d2e,#2d3155);border-radius:var(--r);padding:22px;margin-bottom:22px;}
+  .money-block h3{color:#fff;font-size:15px;font-weight:800;margin-bottom:16px;}
+  .money-rows{display:flex;flex-direction:column;gap:8px;}
+  .mr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.06);}
+  .mr.total{background:rgba(255,255,255,.12);margin-top:6px;}
+  .mr-label{font-size:13px;color:rgba(255,255,255,.7);}
+  .mr.total .mr-label{color:#fff;font-weight:700;font-size:14px;}
+  .mr-val{font-size:14px;font-weight:800;}
+  .mr-val.pos{color:#4ade80;} .mr-val.neg{color:#f87171;} .mr-val.neu{color:rgba(255,255,255,.5);}
+  .mr.total .mr-val{color:#fff;font-size:18px;}
+
+  /* Summary table */
+  .sum-wrap{background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:22px;}
+  .sum-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .sum-table th{background:#1a1d2e;color:rgba(255,255,255,.75);padding:9px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+  .sum-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  .sum-table tr:last-child td{border-bottom:none;} .sum-table tr:hover td{background:#fafafa;}
+  .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+  .badge.green{background:var(--green-bg);color:var(--green);} .badge.yellow{background:var(--yellow-bg);color:var(--yellow);} .badge.red{background:var(--red-bg);color:var(--red);} .badge.empty{background:#f3f4f6;color:#9ca3af;}
+
+  /* Rich Master status */
+  .rich-banner{border-radius:var(--r);padding:16px 22px;margin-bottom:22px;display:flex;align-items:center;gap:14px;}
+  .rich-banner.achieved{background:linear-gradient(135deg,#fef9c3,#fef3c7);border:2px solid #fbbf24;}
+  .rich-banner.not-yet{background:#f9fafb;border:1.5px solid var(--border);}
+  .rb-icon{font-size:36px;}
+  .rb-text .rbt{font-size:16px;font-weight:800;}
+  .rich-banner.achieved .rbt{color:#92400e;}
+  .rich-banner.not-yet .rbt{color:var(--muted);}
+  .rb-text .rbs{font-size:12px;color:var(--muted);margin-top:3px;}
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:var(--r);padding:26px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);}
+  .modal h3{font-size:17px;font-weight:800;margin-bottom:14px;}
+  .modal-row{margin-bottom:12px;}
+  .modal-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;display:block;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+
+  /* Toast */
+  .toast-c{position:fixed;bottom:22px;right:22px;z-index:300;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+  .toast{background:#1a1d2e;color:#fff;padding:11px 16px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:auto;}
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state .ei{font-size:42px;margin-bottom:10px;}
+  .empty-state .et{font-size:17px;font-weight:700;color:var(--text);margin-bottom:5px;}
+
+  /* DIRECTOR MODE - hide edit controls */
+  body[data-role="director"] .emp-del-btn,
+  body[data-role="director"] .btn-red,
+  body[data-role="director"] .btn-green:not([onclick*="exportCSV"]),
+  body[data-role="director"] [onclick*="openEditEmp"],
+  body[data-role="director"] [onclick*="openAddEmpModal"],
+  body[data-role="director"] [onclick*="deleteEmp"],
+  body[data-role="director"] .add-row,
+  body[data-role="director"] .kpi-inp,
+  body[data-role="director"] .kpi-sel,
+  body[data-role="director"] input[type="checkbox"],
+  body[data-role="director"] .week-cell,
+  body[data-role="director"] [onclick*="openWeek"],
+  body[data-role="director"] [onclick*="toggleCheck"],
+  body[data-role="director"] [onclick*="saveKPI"],
+  body[data-role="director"] [onclick*="saveWeek"] { pointer-events:none!important; opacity:.5!important; cursor:default!important; }
+  body[data-role="director"] .branch-card:hover,
+  body[data-role="director"] .emp-card:hover { transform:none!important; box-shadow:var(--shadow)!important; border-color:var(--border)!important; cursor:default!important; }
+  body[data-role="director"] .weeks-grid .week-btn { pointer-events:none!important; cursor:default!important; }
+  body[data-role="director"] .crit-panel input,
+  body[data-role="director"] .crit-panel label { pointer-events:none!important; cursor:default!important; }
+
+  /* LOGIN SCREEN */
+  .login-screen{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#1a1d2e,#2d3155);z-index:1000;align-items:center;justify-content:center;}
+  .login-screen.active{display:flex;}
+  .login-box{background:#fff;border-radius:20px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center;}
+  .login-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px;text-align:center;}
+  .login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;}
+  .login-field{margin-bottom:16px;}
+  .login-field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;}
+  .login-field input{width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;font-family:inherit;outline:none;transition:border .15s;}
+  .login-field input:focus{border-color:var(--red);}
+  .login-btn{width:100%;padding:12px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px;transition:background .15s;}
+  .login-btn:hover{background:var(--red-dark);}
+  .login-err{color:var(--red);font-size:12px;font-weight:600;text-align:center;margin-top:10px;min-height:18px;}
+
+  /* MASTER CABINET */
+  .master-cab{display:none;} .master-cab.active{display:block;}
+  .cab-hdr{background:linear-gradient(135deg,#1a1d2e,#2d3155);padding:0;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(0,0,0,.2);}
+  .cab-hdr-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:16px;height:72px;}
+  .cab-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
+  .cab-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+  .cab-hdr-info{flex:1;}
+  .cab-name{font-size:16px;font-weight:800;color:#fff;line-height:1.2;}
+  .cab-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+  .cab-logout{background:rgba(255,255,255,.12);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:background .15s;}
+  .cab-logout:hover{background:rgba(255,255,255,.22);}
+  .cab-body{max-width:1100px;margin:0 auto;padding:28px 24px 60px;}
+  .cab-month-sel{padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-family:inherit;font-weight:600;background:#fff;color:var(--text);cursor:pointer;margin-bottom:24px;}
+  .cab-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+  .cab-kpi-card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border:1.5px solid var(--border);}
+  .cab-kpi-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .cab-kpi-val{font-size:24px;font-weight:900;line-height:1;}
+  .cab-kpi-val.green{color:var(--green);} .cab-kpi-val.yellow{color:var(--yellow);} .cab-kpi-val.red{color:var(--red);} .cab-kpi-val.blue{color:#2563eb;} .cab-kpi-val.dark{color:var(--text);}
+  .cab-kpi-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+  .cab-weeks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px;}
+  .cab-week-card{background:#fff;border-radius:14px;padding:16px;box-shadow:var(--shadow);border:1.5px solid var(--border);cursor:pointer;transition:all .2s;}
+  .cab-week-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+  .cab-week-card.green{border-color:var(--green);} .cab-week-card.yellow{border-color:var(--yellow);} .cab-week-card.red{border-color:var(--red);}
+  .cwh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .cwh-title{font-size:14px;font-weight:800;} .cwh-date{font-size:11px;color:var(--muted);}
+  .cwh-pct{font-size:26px;font-weight:900;}
+  .cwh-pct.green{color:var(--green);} .cwh-pct.yellow{color:var(--yellow);} .cwh-pct.red{color:var(--red);} .cwh-pct.empty{color:#d1d5db;}
+  .cw-bar{height:4px;background:#f3f4f6;border-radius:2px;overflow:hidden;}
+  .cw-bar-fill{height:100%;border-radius:2px;transition:width .4s;}
+  .cw-bar-fill.green{background:var(--green);} .cw-bar-fill.yellow{background:var(--yellow);} .cw-bar-fill.red{background:var(--red);}
+  .cab-crit-panel{background:#fff;border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:20px;}
+  .cab-crit-title{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .cab-crit-section{margin-bottom:14px;}
+  .cab-crit-sec-name{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+  .cab-crit-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px;}
+  .cab-crit-item:last-child{border-bottom:none;}
+  .cab-check{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;}
+  .cab-check.yes{background:var(--green-bg);color:var(--green);} .cab-check.no{background:var(--red-bg);color:var(--red);}
+  .cab-photo-wrap{position:relative;cursor:pointer;}
+  .cab-photo-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:none;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;}
+  .cab-avatar:hover .cab-photo-overlay{display:flex;}
+
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-v"><svg viewBox="0 0 60 55" width="42" height="42" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red diagonal stripe -->
+  <line x1="8" y1="8" x2="20" y2="48" stroke="#C8102E" stroke-width="7" stroke-linecap="round"/>
+  <!-- Black V left leg -->
+  <line x1="18" y1="8" x2="34" y2="48" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round"/>
+  <!-- Black V right leg going up with arrow -->
+  <line x1="34" y1="48" x2="52" y2="6" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round"/>
+  <!-- Arrow head -->
+  <polyline points="40,6 52,6 52,18" stroke="#1a1a1a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></div>
+    <div><div class="hdr-t">Вектор · Здоровая клетка</div><div class="hdr-s">Мониторинг МПОВ</div></div>
+  </div>
+  <div class="hdr-nav">
+    <button class="btn btn-ghost" style="font-size:12px;opacity:.7" onclick="if(confirm('Сбросить ВСЕ данные? Мастера и оценки будут удалены.'))resetAllData()">🗑 Сброс</button>
+    <button class="btn btn-ghost" onclick="openAddMonthModal()">📅 Новый месяц</button>
+    <button class="btn btn-ghost" onclick="importJSON()" title="Загрузить данные из файла резервной копии">📥 Импорт</button>
+    <button class="btn btn-ghost" onclick="exportJSON()" title="Сохранить все данные в файл резервной копии">💾 Бэкап</button>
+    <button class="btn btn-green" onclick="exportCSV()">📊 Экспорт Excel</button>
+    <button class="btn btn-ghost" style="font-size:12px;opacity:.7" onclick="doLogout()">🚪 Выйти</button>
+    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImportFile(event)">
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <!-- ГЛАВНАЯ: ФИЛИАЛЫ -->
+  <div id="viewDash" class="view active">
+    <div class="dash-top">
+      <div class="dash-title">Филиалы <span id="dashMonthLabel" style="color:var(--red)">—</span></div>
+      <div class="month-ctrl">
+        <select class="msel" id="monthSelect" onchange="switchMonth(this.value)"></select>
+        <button class="btn btn-red" onclick="openAddEmpModal()">+ Добавить мастера</button>
+      </div>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="branch-grid" id="branchGrid"></div>
+  </div>
+
+  <!-- ЭКРАН ФИЛИАЛА: СПИСОК МАСТЕРОВ -->
+  <div id="viewBranch" class="view">
+    <div class="dash-top">
+      <span class="back-btn" onclick="showDash()">← Все филиалы</span>
+      <div class="month-ctrl">
+        <button class="btn btn-red" onclick="openAddEmpModal()">+ Добавить мастера</button>
+      </div>
+    </div>
+    <div class="dash-title" style="margin-bottom:16px">
+      <span id="branchViewIcon" style="font-size:22px;margin-right:8px"></span>
+      <span id="branchViewName" style="color:var(--red)">—</span>
+    </div>
+    <div class="stats-bar" id="branchStatsBar"></div>
+    <div class="emp-grid" id="empGrid"></div>
+    <div id="empEmpty" class="empty-state" style="display:none">
+      <div class="ei">👤</div>
+      <div class="et">Мастера не добавлены</div>
+      <div>Нажмите «+ Добавить мастера» чтобы начать</div>
+    </div>
+  </div>
+
+  <!-- MASTER -->
+  <div id="viewMaster" class="view">
+    <span class="back-btn" onclick="curBranch!==''?showBranch():showDash()">← Назад</span>
+    <div class="mhdr">
+      <div class="mhdr-info">
+        <div class="mn" id="masterName">—</div>
+        <div class="ms" id="masterMonthLabel">—</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:4px" id="masterSubInfo"></div>
+        <div class="mschedule" id="masterScheduleLabel">—</div>
+        <div class="mhdr-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditEmp(curEmp)">✏️ Редактировать</button>
+    <button class="btn btn-ghost btn-sm" onclick="deleteCurrentEmp()">🗑 Удалить</button>
+          <button class="btn btn-green btn-sm" onclick="exportCSV()">📊 Экспорт</button>
+        </div>
+      </div>
+      <div class="avg-circle" id="masterAvgCircle">
+        <span class="an" id="masterAvgNum">—</span>
+        <span class="al">за месяц</span>
+      </div>
+    </div>
+
+    <div id="motivBanner"></div>
+    <div id="richBanner"></div>
+
+    <!-- KPI inputs -->
+    <div class="kpi-card">
+      <h3>⚙️ Параметры мастера за месяц</h3>
+      <div class="kpi-grid">
+        <div class="kpi-row">
+          <span class="kpi-label">График работы</span>
+          <select class="kpi-sel" id="scheduleSelect" onchange="saveKPI()">
+            <option value="52">5/2 (норма 120 уроков)</option>
+            <option value="22">2/2 (норма 98 уроков)</option>
+          </select>
+        </div>
+        <!-- Разделитель занятий -->
+        <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Занятия (акад. часов ÷ 3 = занятий)</div>
+
+        <!-- Основные -->
+        <div class="kpi-row">
+          <span class="kpi-label">Основные занятия (120) <span style="font-size:10px;color:var(--muted)">÷3</span></span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="kpi-inp-wrap">
+              <input class="kpi-inp" type="number" id="mainHoursInput" min="0" max="999" placeholder="акад.ч" oninput="calcLessons('mainHoursInput','mainLessonsOut',3);saveKPI()" style="width:76px">
+              <span class="kpi-unit">ч</span>
+            </div>
+            <span style="color:var(--muted);font-size:13px">=</span>
+            <span class="lessons-out" id="mainLessonsOut">0 зан.</span>
+          </div>
+        </div>
+
+        <!-- ГОС -->
+        <div class="kpi-row">
+          <span class="kpi-label">ГОС экзамены <span style="font-size:10px;color:var(--muted)">÷3</span></span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="kpi-inp-wrap">
+              <input class="kpi-inp" type="number" id="gosHoursInput" min="0" max="999" placeholder="акад.ч" oninput="calcLessons('gosHoursInput','gosLessonsOut',3);saveKPI()" style="width:76px">
+              <span class="kpi-unit">ч</span>
+            </div>
+            <span style="color:var(--muted);font-size:13px">=</span>
+            <span class="lessons-out" id="gosLessonsOut">0 зан.</span>
+          </div>
+        </div>
+
+        <!-- ВнГ -->
+        <div class="kpi-row">
+          <span class="kpi-label">ВнГ (внутренний экзамен) <span style="font-size:10px;color:var(--muted)">÷3</span></span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="kpi-inp-wrap">
+              <input class="kpi-inp" type="number" id="vngHoursInput" min="0" max="999" placeholder="акад.ч" oninput="calcLessons('vngHoursInput','vngLessonsOut',3);saveKPI()" style="width:76px">
+              <span class="kpi-unit">ч</span>
+            </div>
+            <span style="color:var(--muted);font-size:13px">=</span>
+            <span class="lessons-out" id="vngLessonsOut">0 зан.</span>
+          </div>
+        </div>
+
+        <!-- Доп. занятия ÷2 -->
+        <div class="kpi-row">
+          <span class="kpi-label">Доп. занятия <span style="font-size:10px;color:var(--muted)">÷2 · ставка +100₽</span></span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="kpi-inp-wrap">
+              <input class="kpi-inp" type="number" id="extraHoursInput" min="0" max="999" placeholder="акад.ч" oninput="calcLessons('extraHoursInput','extraLessonsOut',2);saveKPI()" style="width:76px">
+              <span class="kpi-unit">ч</span>
+            </div>
+            <span style="color:var(--muted);font-size:13px">=</span>
+            <span class="lessons-out" id="extraLessonsOut">0 зан.</span>
+          </div>
+        </div>
+
+        <!-- Поручения ÷3 -->
+        <div class="kpi-row">
+          <span class="kpi-label">Поручения автошколы <span style="font-size:10px;color:var(--muted)">÷3 · 500₽/зан.</span></span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="kpi-inp-wrap">
+              <input class="kpi-inp" type="number" id="porucheniyaHoursInput" min="0" max="999" placeholder="акад.ч" oninput="calcLessons('porucheniyaHoursInput','porucheniyaLessonsOut',3);saveKPI()" style="width:76px">
+              <span class="kpi-unit">ч</span>
+            </div>
+            <span style="color:var(--muted);font-size:13px">=</span>
+            <span class="lessons-out" id="porucheniyaLessonsOut">0 зан.</span>
+          </div>
+        </div>
+
+        <!-- Итого занятий -->
+        <div style="background:#f8fafc;border-radius:10px;padding:8px 12px;margin-top:2px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700;color:var(--text)">Всего занятий</span>
+          <span style="font-size:15px;font-weight:900;color:var(--red)" id="totalLessonsOut">0</span>
+        </div>
+
+        <!-- Нон-стоп -->
+        <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px">Нон-стоп</div>
+        <div class="kpi-row">
+          <span class="kpi-label">Нон-стоп занятия <span style="font-size:10px;color:var(--muted)">1–9шт=1500₽ · ≥10шт=2000₽</span></span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="nonStopInput" min="0" max="99" placeholder="0" oninput="updateTotalLessons();saveKPI()">
+            <span class="kpi-unit">шт.</span>
+          </div>
+        </div>
+
+        <!-- KPI выполнен -->
+        <div style="padding:6px 0 2px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px">KPI</div>
+        <div class="kpi-row">
+          <span class="kpi-label">KPI выполнен <span style="font-size:10px;color:var(--muted)">+67₽ к каждому занятию</span></span>
+          <select class="kpi-sel" id="kpiDoneSelect" onchange="saveKPI()">
+            <option value="0">Не выполнен</option>
+            <option value="1">✅ Выполнен (+67₽/зан.)</option>
+          </select>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Отзывов за месяц</span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="reviewsInput" min="0" max="30" placeholder="0" oninput="saveKPI()">
+            <span class="kpi-unit">отзывов</span>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Отзывов с фото</span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="reviewsPhotoInput" min="0" max="30" placeholder="0" oninput="saveKPI()">
+            <span class="kpi-unit">шт.</span>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Базовая ставка (₽/урок)</span>
+          <div class="kpi-inp-wrap">
+            <input class="kpi-inp" type="number" id="rateInput" min="0" placeholder="0" oninput="saveKPI()">
+            <span class="kpi-unit">₽</span>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Стаж (лет) <span style="font-size:10px;color:var(--muted)">— считается автоматически из даты приёма</span></span>
+          <select class="kpi-sel" id="stageSelect" onchange="saveKPI()" style="color:var(--muted)">
+            <option value="0">менее 1 года</option>
+            <option value="1">1 год (+67₽)</option>
+            <option value="2">2+ года (+134₽)</option>
+          </select>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Старший инструктор</span>
+          <select class="kpi-sel" id="seniorSelect" onchange="saveKPI()">
+            <option value="0">Нет</option>
+            <option value="3500">Да, команда 1–6 чел. (+3 500₽)</option>
+            <option value="7000">Да, команда 7+ чел. (+7 000₽)</option>
+          </select>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Командный KPI (старший, 7+ чел.)</span>
+          <select class="kpi-sel" id="teamKpiSelect" onchange="saveKPI()">
+            <option value="0">Нет</option>
+            <option value="67">Выполнен (+67₽/урок)</option>
+          </select>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Экзаменаторство</span>
+          <select class="kpi-sel" id="examinerSelect" onchange="saveKPI()">
+            <option value="0">Нет</option>
+            <option value="1">Да (+67₽)</option>
+          </select>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Наставничество (3 мес.)</span>
+          <select class="kpi-sel" id="mentorSelect" onchange="saveKPI()">
+            <option value="0">Нет</option>
+            <option value="1">Да (+5 000₽)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Money breakdown -->
+    <div class="money-block" id="moneyBlock"></div>
+
+    <div class="sec-title">Недели месяца</div>
+    <div class="weeks-grid" id="weeksGrid"></div>
+
+    <div class="crit-panel" id="criteriaPanel" style="display:none">
+      <div class="crit-head">
+        <h3 id="critWeekTitle">Неделя —</h3>
+        <span class="wavg-badge" id="critWeekAvg">—</span>
+      </div>
+      <div id="criteriaList"></div>
+    </div>
+
+    <div class="sec-title" style="margin-bottom:12px">Сводная таблица за месяц</div>
+    <div class="sum-wrap">
+      <table class="sum-table">
+        <thead><tr>
+          <th>Критерий</th><th>Нед. 1</th><th>Нед. 2</th><th>Нед. 3</th><th>Нед. 4</th><th>Нед. 5</th><th>Среднее</th>
+        </tr></thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="addMonthModal">
+  <div class="modal">
+    <h3>📅 Новый месяц</h3>
+    <div class="modal-row"><label class="modal-label">Название</label>
+      <input class="inp" id="newMonthInput" placeholder="Например: Июль 2026" style="width:100%"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addMonthModal')">Отмена</button>
+      <button class="btn btn-red" onclick="addMonth()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addEmpModal">
+  <div class="modal">
+    <h3>👤 Новый мастер</h3>
+    <div class="modal-row"><label class="modal-label">ФИО</label>
+      <input class="inp" id="newEmpInput" placeholder="Иванов Иван Иванович" style="width:100%"></div>
+    <div class="modal-row"><label class="modal-label">Филиал</label>
+      <select class="inp" id="newEmpBranch" style="width:100%">
+        <option value="Кирова">Кирова</option>
+        <option value="Роз">Роз</option>
+        <option value="Урожайная">Урожайная</option>
+        <option value="Фабрициуса">Фабрициуса</option>
+        <option value="Гастелло">Гастелло</option>
+      </select></div>
+    <div class="modal-row"><label class="modal-label">Должность</label>
+      <select class="inp" id="newEmpPosition" style="width:100%">
+        <option value="senior">Старший МПОВ</option>
+        <option value="examiner">МПОВ Экзаменатор</option>
+        <option value="mpov">МПОВ</option>
+      </select></div>
+    <div class="modal-row"><label class="modal-label">Дата приёма на работу</label>
+      <input class="inp" type="date" id="newEmpHireDate" style="width:100%"></div>
+    <div style="border-top:1.5px solid var(--border);margin:14px 0;"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">🔐 Доступ в систему</div>
+    <div class="modal-row"><label class="modal-label">Логин (для входа)</label>
+      <input class="inp" id="newEmpLogin" placeholder="например: ivanov" style="width:100%" autocomplete="off"></div>
+    <div class="modal-row"><label class="modal-label">Пароль</label>
+      <input class="inp" type="password" id="newEmpPass" placeholder="минимум 6 символов" style="width:100%" autocomplete="off"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Отмена</button>
+      <button class="btn btn-red" onclick="addEmployee()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Employee Modal -->
+<div class="modal-overlay" id="editEmpModal">
+  <div class="modal">
+    <h3>✏️ Редактировать мастера</h3>
+    <div class="modal-row"><label class="modal-label">ФИО</label>
+      <input class="inp" id="editEmpName" placeholder="Иванов Иван Иванович" style="width:100%"></div>
+    <div class="modal-row"><label class="modal-label">Филиал</label>
+      <select class="inp" id="editEmpBranch" style="width:100%">
+        <option value="Кирова">Кирова</option>
+        <option value="Роз">Роз</option>
+        <option value="Урожайная">Урожайная</option>
+        <option value="Фабрициуса">Фабрициуса</option>
+        <option value="Гастелло">Гастелло</option>
+      </select></div>
+    <div class="modal-row"><label class="modal-label">Должность</label>
+      <select class="inp" id="editEmpPosition" style="width:100%">
+        <option value="senior">Старший МПОВ</option>
+        <option value="examiner">МПОВ Экзаменатор</option>
+        <option value="mpov">МПОВ</option>
+      </select></div>
+    <div class="modal-row"><label class="modal-label">Дата приёма на работу</label>
+      <input class="inp" type="date" id="editEmpHireDate" style="width:100%"></div>
+    <div style="border-top:1.5px solid var(--border);margin:14px 0;"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">🔐 Доступ в систему</div>
+    <div class="modal-row"><label class="modal-label">Логин</label>
+      <input class="inp" id="editEmpLogin" placeholder="например: ivanov" style="width:100%" autocomplete="off"></div>
+    <div class="modal-row"><label class="modal-label">Новый пароль <span style="font-weight:400;color:var(--muted)">(оставьте пустым если не меняете)</span></label>
+      <input class="inp" type="password" id="editEmpPass" placeholder="минимум 6 символов" style="width:100%" autocomplete="off"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editEmpModal')">Отмена</button>
+      <button class="btn btn-red" onclick="saveEditEmp()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-c" id="toastC"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+// ===== CONSTANTS =====
+// Каждый раздел содержит подпункты. Вес каждого = 100 / кол-во подпунктов
+const CRITERIA = [
+  { id:'pdd',    name:'Знание ПДД 100%',       items:[
+    'Еженедельная сдача ПДД',
+    'Отсутствие штрафов',
+  ]},
+  { id:'brand',  name:'Брендбук',              items:[
+    'Опрятность (голова, борода / волосы)',
+    'Одежда строго по брендбуку (чистая, не выгоревшая, не мятая)',
+    'Бейдж — в течение всего рабочего дня',
+  ]},
+  { id:'market', name:'Маркетинг',             items:[
+    'Сторис или пост раз в неделю / отдельная рабочая соцсеть',
+    'Работа с ботом Zorgen — 70% от количества занятий',
+    'Отзывы на площадках (2ГИС, Яндекс)',
+    'Видеозапись урока — один раз в неделю',
+    'Участие в офлайн-мероприятиях раз в месяц',
+  ]},
+  { id:'pres',   name:'Эффект присутствия',    items:[
+    'Встреча курсантов на филиале без опозданий',
+    'Движение строго по маршруту',
+    'Исключение перекусов и перекуров во время занятия',
+  ]},
+  { id:'legal',  name:'Нормативные документы', items:[
+    'Знание приказа №90',
+    'Знание экзаменационного маршрута',
+    'Знание команд экзаменатора',
+    'Присутствие на экзамене ГИБДД раз в месяц',
+  ]},
+  { id:'vector', name:'Жизнь в Векторе',       items:[
+    'Знание корпоративной культуры (ценности и традиции)',
+    'Знание всех регламентов (внутренние процессы и стандарты)',
+    'Знание корпоративной книги (история, миссия, принципы)',
+  ]},
+  { id:'nps',    name:'NPS',                   items:[
+    'Исключить телефон во время занятий',
+    'Уважительное отношение к коллегам (взаимопомощь и тактичность)',
+  ]},
+  { id:'car',    name:'Забота об автомобиле',  items:[
+    'Чистота кузова, отсутствие повреждений',
+    'Чистота салона, порядок, отсутствие посторонних запахов',
+    'Укомплектованность (документы и инструменты)',
+  ]},
+];
+const WEEKS = 5;
+
+const BRANCHES = [
+  {id:'Кирова',      icon:'🏢', label:'Кирова'},
+  {id:'Роз',         icon:'🌹', label:'Роз'},
+  {id:'Урожайная',   icon:'🌾', label:'Урожайная'},
+  {id:'Фабрициуса',  icon:'🔧', label:'Фабрициуса'},
+  {id:'Гастелло',    icon:'✈️', label:'Гастелло'},
+];
+
+let curBranch = '';
+
+
+// ===== STATE =====
+let state = { 
+  months: ['Июнь 2026'], 
+  employees: ['Петров Иван', 'Сидоров Петр', 'Смирнов Василий'], 
+  data: {}, 
+  kpi: {} 
+};
+let curMonth = '';
+let curEmp = -1;
+let curWeek = -1;
+
+// ===== FIREBASE =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBYtnAmhUnnvZpUPcONLdvqnmmrQyFbI2A",
+  authDomain: "zdorovaya-kletka.firebaseapp.com",
+  projectId: "zdorovaya-kletka",
+  storageBucket: "zdorovaya-kletka.firebasestorage.app",
+  messagingSenderId: "255646559115",
+  appId: "1:255646559115:web:4f8523cbe7b714403fdd8e"
+};
+firebase.initializeApp(firebaseConfig);
+const firestore = firebase.firestore();
+const auth = firebase.auth();
+const STATE_DOC = firestore.collection('app').doc('state');
+const ADMIN_EMAIL = 'o1dbro@icloud.com';
+const DIRECTOR_LOGIN = 'director'; // логин директора
+let currentUser = null;
+let currentRole = null; // 'admin' | 'master'
+
+function initDB() { return Promise.resolve(); }
+
+async function save() {
+  try {
+    await STATE_DOC.set({ data: JSON.stringify(state) });
+  } catch(e) {
+    console.warn('Firebase save error', e);
+    try { localStorage.setItem('vk3_state', JSON.stringify(state)); } catch(_) {}
+  }
+}
+
+async function load() {
+  try {
+    const snap = await STATE_DOC.get();
+    if (snap.exists) {
+      state = JSON.parse(snap.data().data);
+    }
+  } catch(e) {
+    console.warn('Firebase load error', e);
+    try {
+      const s = localStorage.getItem('vk3_state');
+      if (s) state = JSON.parse(s);
+    } catch(_) {}
+  }
+  initializeState();
+}
+
+function initializeState() {
+  if (!state.months || !state.months.length) state.months = ['Июнь 2026'];
+  if (!state.employees) state.employees = [];
+  if (!state.profiles) state.profiles = [];
+  if (!state.data) state.data = {};
+  if (!state.kpi) state.kpi = {};
+  
+  if (state.employees.length === 0) {
+    state.employees = ['Петров Иван Петрович', 'Сидоров Петр Сидорович'];
+  }
+  // Sync profiles array length
+  while (state.profiles.length < state.employees.length) {
+    state.profiles.push({branch:'Кирова', position:'mpov', hireDate:''});
+  }
+  while (state.profiles.length > state.employees.length) state.profiles.pop();
+  
+  for (const m of state.months) ensureMonth(m);
+  curMonth = state.months[0];
+}
+
+function ensureMonth(m) {
+  if (!state.data[m]) state.data[m] = [];
+  if (!state.kpi[m]) state.kpi[m] = [];
+  for (let ei = 0; ei < state.employees.length; ei++) {
+    if (!state.data[m][ei]) {
+      state.data[m][ei] = emptyEmpData();
+    } else {
+      try {
+        for (let wi = 0; wi < state.data[m][ei].length; wi++) {
+          const week = state.data[m][ei][wi];
+          if (!week || !Array.isArray(week)) { state.data[m][ei][wi] = emptyWeek(); continue; }
+          // Старый формат: массив чисел [0..100]
+          if (week.length > 0 && typeof week[0] === 'number') {
+            state.data[m][ei][wi] = CRITERIA.map((c, ci) => {
+              const val = week[ci] || 0;
+              if (val >= 100) return Array(c.items.length).fill(true);
+              if (val > 0) {
+                const checked = Math.round(val / 100 * c.items.length);
+                return Array(c.items.length).fill(false).map((_, i) => i < checked);
+              }
+              return Array(c.items.length).fill(false);
+            });
+          } else {
+            // Новый формат — проверяем каждый критерий
+            for (let ci = 0; ci < CRITERIA.length; ci++) {
+              if (!Array.isArray(week[ci])) week[ci] = Array(CRITERIA[ci].items.length).fill(false);
+              while (week[ci].length < CRITERIA[ci].items.length) week[ci].push(false);
+            }
+          }
+        }
+      } catch(e) {
+        console.warn('Migration error, resetting week data:', e);
+        state.data[m][ei] = emptyEmpData();
+      }
+      while(state.data[m][ei].length < WEEKS) state.data[m][ei].push(emptyWeek());
+    }
+    if (!state.kpi[m][ei]) state.kpi[m][ei] = emptyKPI();
+    // Совместимость: если старый KPI с lessons/extraLessons но без hours
+    const k = state.kpi[m][ei];
+    if (!k.mainHours && k.lessons) { k.mainHours = k.lessons * 3; }
+    if (!k.extraHours && k.extraLessons) { k.extraHours = k.extraLessons * 2; }
+  }
+}
+function emptyWeek() {
+  // For each criterion: array of booleans (one per sub-item)
+  return CRITERIA.map(c => Array(c.items.length).fill(false));
+}
+function emptyEmpData() { return Array.from({length:WEEKS}, () => emptyWeek()); }
+function emptyKPI() { return {schedule:'52', mainHours:0, gosHours:0, vngHours:0, extraHours:0, porucheniyaHours:0, nonStop:0, kpiDone:0, reviews:0, reviewsPhoto:0, rate:0, stage:0, senior:0, teamKpi:0, examiner:0, mentor:0, hireDate:'', branch:'Кирова', position:'mpov'}; }
+
+// ===== CALCULATIONS =====
+function weekAvg(ei, wi) {
+  const d = state.data[curMonth];
+  if (!d || !d[ei] || !d[ei][wi]) return null;
+  const row = d[ei][wi];
+  // Check if any checkbox was touched (any true)
+  const anyChecked = row.some(checks => checks.some(v => v));
+  if (!anyChecked) return null;
+  // Each criterion = 100/8. Within criterion each item = criterionWeight/items.length
+  const critWeight = 100 / CRITERIA.length;
+  let total = 0;
+  for (let ci = 0; ci < CRITERIA.length; ci++) {
+    const checks = row[ci] || [];
+    const itemWeight = critWeight / CRITERIA[ci].items.length;
+    const earned = checks.filter(Boolean).length * itemWeight;
+    total += earned;
+  }
+  return total;
+}
+function monthAvg(ei) {
+  let s=0, n=0;
+  for (let w=0; w<WEEKS; w++) { const a=weekAvg(ei,w); if(a!==null){s+=a;n++;} }
+  return n>0 ? s/n : null;
+}
+
+// ===== HOURS → LESSONS CONVERTER =====
+function calcLessons(hoursId, outId, divisor) {
+  const h = parseFloat(document.getElementById(hoursId).value) || 0;
+  const lessons = Math.floor(h / divisor * 10) / 10;
+  document.getElementById(outId).textContent = lessons > 0 ? lessons.toFixed(lessons % 1 === 0 ? 0 : 1) + ' зан.' : '0 зан.';
+  updateTotalLessons();
+}
+function updateTotalLessons() {
+  const ids = [
+    {id:'mainHoursInput', div:3},
+    {id:'gosHoursInput', div:3},
+    {id:'vngHoursInput', div:3},
+    {id:'extraHoursInput', div:2},
+    {id:'porucheniyaHoursInput', div:3},
+  ];
+  let total = 0;
+  for (const {id, div} of ids) {
+    const el = document.getElementById(id);
+    if (el) total += Math.floor((parseFloat(el.value)||0) / div * 10) / 10;
+  }
+  // Нон-стоп тоже занятия
+  const ns = document.getElementById('nonStopInput');
+  if (ns) total += parseInt(ns.value)||0;
+  const out = document.getElementById('totalLessonsOut');
+  if (out) out.textContent = (Math.round(total * 10) / 10).toFixed(total % 1 === 0 ? 0 : 1);
+}
+function clr(p) {
+  if (p===null) return 'empty';
+  if (p>=90) return 'green';
+  if (p>=70) return 'yellow';
+  return 'red';
+}
+function fmt(v) { return v===null ? '—' : v.toFixed(1)+'%'; }
+
+// ===== MOTIVATION CALC =====
+// Регламент ООО "Вектор 23" от 12.12.2025
+function calcMotiv(ei) {
+  const k = (state.kpi[curMonth] && state.kpi[curMonth][ei]) ? state.kpi[curMonth][ei] : emptyKPI();
+  const avg = monthAvg(ei);
+  const sch = k.schedule || '52';
+  const rate = parseFloat(k.rate) || 0;
+  const stage = parseInt(k.stage) || 0;
+  const senior = parseInt(k.senior) || 0;
+  const teamKpi = parseInt(k.teamKpi) || 0;
+  // Экзаменаторство: либо выбрано вручную, либо автоматически из должности
+  const _empProf = (state.profiles && state.profiles[ei]) || {};
+  const examiner = parseInt(k.examiner) || (_empProf.position === 'examiner' ? 1 : 0);
+  const mentor = parseInt(k.mentor) || 0;
+  const reviews = parseInt(k.reviews) || 0;
+  const reviewsPhoto = parseInt(k.reviewsPhoto) || 0;
+  const nonStop = parseInt(k.nonStop) || 0;
+  const kpiDone = parseInt(k.kpiDone) || 0;
+
+  // Считаем занятия из часов
+  const mainL    = Math.floor((parseFloat(k.mainHours)||0) / 3 * 10) / 10;
+  const gosL     = Math.floor((parseFloat(k.gosHours)||0) / 3 * 10) / 10;
+  const vngL     = Math.floor((parseFloat(k.vngHours)||0) / 3 * 10) / 10;
+  const extraL   = Math.floor((parseFloat(k.extraHours)||0) / 2 * 10) / 10;
+  const porL     = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
+
+  // Базовые занятия (без поручений и нон-стопа)
+  const baseL = mainL + gosL + vngL; // для нормы KPI
+  const allMainL = mainL + gosL + vngL + extraL + porL; // для стажа/KPI/экзам.
+  const allBaseL = mainL + gosL + vngL + extraL; // для здоровой клетки и стажа (без поручений и без нон-стопа)
+
+  const rows = [];
+  let total = 0;
+
+  // 1. Основные занятия (120 + ГОС + ВнГ) × базовая ставка
+  if (rate > 0 && (mainL + gosL + vngL) > 0) {
+    const baseTotal = rate * (mainL + gosL + vngL);
+    rows.push({label:'Основные занятия', val:baseTotal, type:'pos',
+      note:`${rate}₽ × ${(mainL+gosL+vngL).toFixed(mainL+gosL+vngL%1===0?0:1)} зан. (осн. ${mainL} + ГОС ${gosL} + ВнГ ${vngL})`});
+    total += baseTotal;
+  }
+
+  // 2. Доп. занятия (÷2) × (ставка + 100₽)
+  if (rate > 0 && extraL > 0) {
+    const extraRate = rate + 100;
+    const extraTotal = extraRate * extraL;
+    rows.push({label:'Доп. занятия', val:extraTotal, type:'pos',
+      note:`${extraRate}₽/зан. × ${extraL} зан. (ставка ${rate}₽ + 100₽)`});
+    total += extraTotal;
+  }
+
+  // 3. Поручения автошколы × 500₽
+  if (porL > 0) {
+    const porTotal = 500 * porL;
+    rows.push({label:'Поручения автошколы', val:porTotal, type:'pos',
+      note:`500₽/зан. × ${porL} зан.`});
+    total += porTotal;
+  }
+
+  // 4. Нон-стоп
+  if (nonStop > 0) {
+    const nsRate = nonStop >= 10 ? 2000 : 1500;
+    const nsTotal = nsRate * nonStop;
+    rows.push({label:'Нон-стоп', val:nsTotal, type:'pos',
+      note:`${nonStop} × ${nsRate}₽${nonStop>=10?' (≥10 шт → 2000₽)':' (до 10 шт → 1500₽)'}`});
+    total += nsTotal;
+  }
+
+  // 5. KPI выполнен — +67₽ × все занятия (кроме нон-стопа)
+  if (kpiDone > 0 && allMainL > 0) {
+    const kpiBonus = 67 * allMainL;
+    rows.push({label:'KPI выполнен', val:kpiBonus, type:'pos',
+      note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+    total += kpiBonus;
+  } else if (kpiDone === 0) {
+    rows.push({label:'KPI', val:0, type:'neg', note:'Не выполнен — надбавка не начисляется'});
+  }
+
+  // 5. Здоровая клетка +67₽ × (осн.+ГОС+ВнГ+доп) при ≥90%
+  const hcEarned = avg !== null && avg >= 90;
+  const hcBonus = hcEarned ? 67 * allBaseL : 0;
+  rows.push({
+    label:'Здоровая клетка',
+    val: hcBonus,
+    type: hcEarned ? 'pos' : 'neg',
+    note: hcEarned
+      ? `+67₽/зан. × ${allBaseL.toFixed(allBaseL%1===0?0:1)} зан. (ср. ${avg.toFixed(1)}% ≥ 90%)`
+      : avg===null ? 'Нет данных по неделям' : `Текущий % ${avg.toFixed(1)}% — нужно ≥90%`
+  });
+  if (hcEarned) total += hcBonus;
+
+  // 6. KPI норма — считаем по всем занятиям (осн+ГОС+ВнГ+доп+поручения)
+  const totalNormL = allMainL;
+  if (totalNormL > 0) {
+    let bonusPerL=0, deductPerL=0, normNote='', normType='neu';
+    if (sch==='52') {
+      if (totalNormL >= 150) { bonusPerL=67; normNote=`Выкатка >150 зан. → +67₽/зан. × ${totalNormL}`; normType='pos'; }
+      else if (totalNormL >= 120) { normNote=`Норма 5/2 выполнена (≥120 зан.)`; normType='neu'; }
+      else if (totalNormL >= 95)  { deductPerL=27;  normNote=`<120 зан. при 5/2 → −27₽/зан. × ${totalNormL}`;  normType='neg'; }
+      else if (totalNormL >= 70)  { deductPerL=67;  normNote=`<95 зан. при 5/2 → −67₽/зан. × ${totalNormL}`;  normType='neg'; }
+      else if (totalNormL >= 45)  { deductPerL=134; normNote=`<70 зан. при 5/2 → −134₽/зан. × ${totalNormL}`; normType='neg'; }
+      else                        { deductPerL=200; normNote=`<45 зан. при 5/2 → −200₽/зан. × ${totalNormL}`; normType='neg'; }
+    } else {
+      if (totalNormL >= 98)      { normNote=`Норма 2/2 выполнена (≥98 зан.)`; normType='neu'; }
+      else if (totalNormL >= 80) { deductPerL=67;  normNote=`<98 зан. при 2/2 → −67₽/зан. × ${totalNormL}`;  normType='neg'; }
+      else if (totalNormL >= 55) { deductPerL=67;  normNote=`≤80 зан. при 2/2 → −67₽/зан. × ${totalNormL}`;  normType='neg'; }
+      else if (totalNormL >= 30) { deductPerL=134; normNote=`≤55 зан. при 2/2 → −134₽/зан. × ${totalNormL}`; normType='neg'; }
+      else                       { deductPerL=200; normNote=`≤30 зан. при 2/2 → −200₽/зан. × ${totalNormL}`; normType='neg'; }
+    }
+    const delta = (bonusPerL - deductPerL) * totalNormL;
+    rows.push({label:'KPI (норма занятий)', val: delta, type: normType, note: normNote});
+    total += delta;
+  }
+
+  // 6. Отзывы на площадках
+  if (reviews > 0 || reviewsPhoto > 0) {
+    const withPhoto = reviewsPhoto;
+    let revBonus = 0, revNote = '';
+    if (withPhoto >= 10) {
+      const blocks = Math.min(Math.floor(withPhoto / 10), 3);
+      revBonus = blocks * 3000;
+      revNote = `${blocks}×10 отзывов с фото → +${revBonus.toLocaleString('ru')}₽`;
+    } else if (reviews >= 10) {
+      const blocks = Math.min(Math.floor(reviews / 10), 3);
+      revBonus = blocks * 2000;
+      revNote = `${blocks}×10 отзывов → +${revBonus.toLocaleString('ru')}₽`;
+    } else if (reviews >= 5) {
+      revNote = `${reviews} отзывов — условие базовой мотивации выполнено`;
+    } else {
+      revNote = `${reviews} отзывов — менее 5, условие не выполнено`;
+    }
+    rows.push({label:'Отзывы', val:revBonus, type:revBonus>0?'pos':reviews>=5?'neu':'neg', note:revNote});
+    total += revBonus;
+  }
+
+  // 7. Стаж — +67₽/+134₽ × все занятия (кроме нон-стопа)
+  if (stage > 0 && allMainL > 0) {
+    const stagePerL = stage === 1 ? 67 : 134;
+    const stageBonus = stagePerL * allMainL;
+    rows.push({label:'Надбавка за стаж', val:stageBonus, type:'pos',
+      note:`${stage===1?'+67₽':'+134₽'}/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+    total += stageBonus;
+  }
+
+  // 8. Старший инструктор (фиксированная сумма в месяц)
+  if (senior > 0) {
+    const senLabel = senior === 3500 ? 'команда 1–6 чел.' : 'команда 7+ чел.';
+    rows.push({label:'Старший инструктор', val:senior, type:'pos', note:`${senLabel} → +${senior.toLocaleString('ru')}₽/мес`});
+    total += senior;
+  }
+
+  // 9. Командный KPI — +67₽ × все занятия (кроме нон-стопа)
+  if (teamKpi > 0 && allMainL > 0) {
+    const tkBonus = 67 * allMainL;
+    rows.push({label:'Командный KPI', val:tkBonus, type:'pos', note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+    total += tkBonus;
+  }
+
+  // 10. Экзаменаторство — +67₽ × все занятия (кроме нон-стопа)
+  if (examiner > 0 && allMainL > 0) {
+    const exBonus = 67 * allMainL;
+    rows.push({label:'Экзаменаторство', val:exBonus, type:'pos', note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+    total += exBonus;
+  }
+
+  // 11. Наставничество — фиксированно
+  if (mentor > 0) {
+    rows.push({label:'Наставничество', val:5000, type:'pos', note:'+5 000₽ за попечительство 3 месяца'});
+    total += 5000;
+  }
+
+  return {rows, total};
+}
+
+// ===== RENDER DASHBOARD =====
+function renderDash() {
+  // Обновляем select месяца
+  const sel = document.getElementById('monthSelect');
+  sel.innerHTML = '';
+  for (const m of state.months) {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    if (m === curMonth) o.selected = true;
+    sel.appendChild(o);
+  }
+  document.getElementById('dashMonthLabel').textContent = curMonth;
+
+  // Общая статистика
+  let teamSum=0, teamCnt=0, totalGreens=0, totalYellows=0, totalReds=0;
+  for (let ei=0; ei<state.employees.length; ei++) {
+    const a = monthAvg(ei);
+    if (a!==null){teamSum+=a;teamCnt++;const cc=clr(a);if(cc==='green')totalGreens++;else if(cc==='yellow')totalYellows++;else totalReds++;}
+  }
+  const ta = teamCnt>0 ? teamSum/teamCnt : null;
+  document.getElementById('statsBar').innerHTML = `
+    <div class="sc"><div class="sc-label">Средний % по всем</div><div class="sc-val ${clr(ta)}">${fmt(ta)}</div></div>
+    <div class="sc"><div class="sc-label">Всего мастеров</div><div class="sc-val" style="color:#1a1d2e">${state.employees.length}</div></div>
+    <div class="sc"><div class="sc-label">🟢 Богатый мастер</div><div class="sc-val green">${totalGreens}</div></div>
+    <div class="sc"><div class="sc-label">🟡 Близко (70–89%)</div><div class="sc-val yellow">${totalYellows}</div></div>
+    <div class="sc"><div class="sc-label">🔴 Нужна работа</div><div class="sc-val red">${totalReds}</div></div>`;
+
+  // Карточки филиалов
+  const bg = document.getElementById('branchGrid');
+  bg.innerHTML = '';
+
+  // Добавляем "без филиала" если есть
+  const allBranches = [...BRANCHES];
+  const hasNoBranch = state.employees.some((_,ei) => !(state.profiles&&state.profiles[ei]&&state.profiles[ei].branch));
+  if (hasNoBranch) allBranches.push({id:'', icon:'❓', label:'Без филиала'});
+
+  for (const br of allBranches) {
+    // Собираем мастеров этого филиала
+    const members = [];
+    for (let ei=0; ei<state.employees.length; ei++) {
+      const prof = (state.profiles&&state.profiles[ei]) || {};
+      if ((prof.branch||'') === br.id) members.push(ei);
+    }
+    if (!members.length && br.id !== '') continue; // не показываем пустые
+
+    let brSum=0, brCnt=0, brG=0, brY=0, brR=0;
+    for (const ei of members) {
+      const a = monthAvg(ei);
+      if (a!==null){brSum+=a;brCnt++;const cc=clr(a);if(cc==='green')brG++;else if(cc==='yellow')brY++;else brR++;}
+    }
+    const brAvg = brCnt>0 ? brSum/brCnt : null;
+    const bc = clr(brAvg);
+    const pw = brAvg!==null ? Math.min(brAvg,100) : 0;
+
+    const safeBrId = String(br.id).replace(/'/g, "\\'");
+    bg.innerHTML += `<div class="branch-card ${bc}" onclick="openBranch('${safeBrId}')">
+      <div class="branch-icon">${br.icon}</div>
+      <div class="branch-name">${br.label}</div>
+      <div class="branch-meta">${members.length} мастер${members.length===1?'':members.length<5?'а':'ов'}</div>
+      <div class="branch-avg ${bc}">${brAvg!==null?brAvg.toFixed(1)+'%':'—'}</div>
+      <div class="branch-bar"><div class="branch-bar-fill ${bc}" style="width:${pw}%"></div></div>
+      <div class="branch-stats">
+        <div class="branch-stat"><div class="bsv green">${brG}</div><div class="bsl">🟢</div></div>
+        <div class="branch-stat"><div class="bsv yellow">${brY}</div><div class="bsl">🟡</div></div>
+        <div class="branch-stat"><div class="bsv red">${brR}</div><div class="bsl">🔴</div></div>
+      </div>
+      <span class="branch-open">Открыть филиал →</span>
+    </div>`;
+  }
+}
+
+function openBranch(branchId) {
+  curBranch = branchId;
+  const br = BRANCHES.find(b=>b.id===branchId) || {icon:'❓', label:'Без филиала'};
+  document.getElementById('branchViewIcon').textContent = br.icon;
+  document.getElementById('branchViewName').textContent = br.label;
+  document.getElementById('viewDash').classList.remove('active');
+  document.getElementById('viewBranch').classList.add('active');
+  renderBranch();
+}
+
+function renderBranch() {
+  const grid = document.getElementById('empGrid');
+  const empty = document.getElementById('empEmpty');
+  grid.innerHTML = '';
+
+  const members = [];
+  for (let ei=0; ei<state.employees.length; ei++) {
+    const prof = (state.profiles&&state.profiles[ei]) || {};
+    if ((prof.branch||'') === curBranch) members.push(ei);
+  }
+
+  // Статистика филиала
+  let brSum=0, brCnt=0, brG=0, brY=0, brR=0;
+  for (const ei of members) {
+    const a = monthAvg(ei);
+    if (a!==null){brSum+=a;brCnt++;const cc=clr(a);if(cc==='green')brG++;else if(cc==='yellow')brY++;else brR++;}
+  }
+  const brAvg = brCnt>0 ? brSum/brCnt : null;
+  document.getElementById('branchStatsBar').innerHTML = `
+    <div class="sc"><div class="sc-label">Средний % филиала</div><div class="sc-val ${clr(brAvg)}">${fmt(brAvg)}</div></div>
+    <div class="sc"><div class="sc-label">Мастеров</div><div class="sc-val" style="color:#1a1d2e">${members.length}</div></div>
+    <div class="sc"><div class="sc-label">🟢 Богатый мастер</div><div class="sc-val green">${brG}</div></div>
+    <div class="sc"><div class="sc-label">🟡 Близко</div><div class="sc-val yellow">${brY}</div></div>
+    <div class="sc"><div class="sc-label">🔴 Нужна работа</div><div class="sc-val red">${brR}</div></div>`;
+
+  if (!members.length){grid.style.display='none';empty.style.display='block';return;}
+  grid.style.display='grid';empty.style.display='none';
+
+  // Сортировка: старший → экзаменатор → мпов
+  const posOrder = {senior:0, examiner:1, mpov:2};
+  members.sort((a,b) => {
+    const pa = (state.profiles&&state.profiles[a]) || {};
+    const pb = (state.profiles&&state.profiles[b]) || {};
+    return (posOrder[pa.position]??2) - (posOrder[pb.position]??2);
+  });
+
+  for (const ei of members) {
+    const name = state.employees[ei];
+    const prof = (state.profiles&&state.profiles[ei]) || {};
+    const avg = monthAvg(ei);
+    const cls = clr(avg);
+    const {total} = calcMotiv(ei);
+    const k = (state.kpi[curMonth]&&state.kpi[curMonth][ei]) ? state.kpi[curMonth][ei] : emptyKPI();
+    const posLabel = prof.position === 'senior' ? '⭐ Старший МПОВ' : prof.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : 'МПОВ';
+    const hireDateLabel = prof.hireDate ? '📅 ' + new Date(prof.hireDate).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+    let pills = '';
+    for (let w=0; w<4; w++) {
+      const wa=weekAvg(ei,w); const wc=clr(wa);
+      pills += `<div class="wp ${wc}"><div class="wl">Нед ${w+1}</div><div class="wv">${wa!==null?wa.toFixed(0)+'%':'—'}</div></div>`;
+    }
+    const pw = avg!==null ? Math.min(avg,100) : 0;
+    const moneyClass = total>0?'pos':total<0?'neg':'neu';
+    const moneyLabel = k.rate>0 ? (total>=0?'+':'')+Math.round(total).toLocaleString('ru')+'₽' : '';
+    grid.innerHTML += `<div class="emp-card ${cls}" onclick="openMaster(${ei})">
+      <div class="ec-head">
+        <div style="flex:1;min-width:0">
+          <div class="ec-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+          <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;background:${prof.position==='senior'?'#fef3c7':prof.position==='examiner'?'#ede9fe':'#f3f4f6'};color:${prof.position==='senior'?'#d97706':prof.position==='examiner'?'#7c3aed':'#6b7280'}">${posLabel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <div class="ec-avg ${cls}" style="font-size:16px">${fmt(avg)}</div>
+          <button class="emp-del-btn" onclick="event.stopPropagation();openEditEmp(${ei})" title="Редактировать" style="background:#e0f2fe;color:#0369a1">✏️</button>
+          <button class="emp-del-btn" onclick="event.stopPropagation();deleteEmpFromDash(${ei})" title="Удалить">✕</button>
+        </div>
+      </div>
+      <div class="prog-wrap" style="margin:8px 0 6px"><div class="prog-fill ${cls}" style="width:${pw}%"></div></div>
+      <div class="ec-weeks" style="gap:4px">${pills}</div>
+      ${hireDateLabel?`<div style="font-size:10px;color:var(--muted);margin-top:6px">${hireDateLabel}</div>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+        <span class="ec-money ${moneyClass}" style="font-size:11px">${k.rate>0?'💰 '+moneyLabel:'📝 Ставка не задана'}</span>
+        <span class="ec-open" style="font-size:10px">Открыть →</span>
+      </div>
+    </div>`;
+  }
+}
+
+// ===== MASTER VIEW =====
+function openMaster(ei) {
+  curEmp = ei; curWeek = -1;
+  document.getElementById('viewDash').classList.remove('active');
+  document.getElementById('viewMaster').classList.add('active');
+  renderMaster();
+}
+function showDash() {
+  document.getElementById('viewMaster').classList.remove('active');
+  document.getElementById('viewBranch').classList.remove('active');
+  document.getElementById('viewDash').classList.add('active');
+  renderDash();
+}
+function showBranch() {
+  document.getElementById('viewMaster').classList.remove('active');
+  document.getElementById('viewDash').classList.remove('active');
+  document.getElementById('viewBranch').classList.add('active');
+  renderBranch();
+}
+
+function renderMaster() {
+  const name = state.employees[curEmp];
+  const k = getKPI();
+  document.getElementById('masterName').textContent = name;
+  document.getElementById('masterMonthLabel').textContent = curMonth;
+  document.getElementById('masterScheduleLabel').textContent = 'График ' + (k.schedule==='22'?'2/2':'5/2');
+  // Должность, филиал, дата приёма
+  const _p = (state.profiles && state.profiles[curEmp]) || {};
+  const _posLbl = _p.position === 'senior' ? '⭐ Старший МПОВ' : _p.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : 'МПОВ';
+  const _brLbl = _p.branch ? ' · ' + _p.branch : '';
+  const _hdLbl = _p.hireDate ? ' · принят ' + new Date(_p.hireDate).toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'}) : '';
+  document.getElementById('masterSubInfo').textContent = _posLbl + _brLbl + _hdLbl;
+
+  // Fill KPI inputs
+  document.getElementById('scheduleSelect').value = k.schedule||'52';
+  const _setHours = (id, val, div, outId) => {
+    const el = document.getElementById(id);
+    if (el) el.value = (val !== undefined && val !== null) ? String(val) : '';
+    const out = document.getElementById(outId);
+    if (out) {
+      const v = parseFloat(val) || 0;
+      const l = Math.floor(v / div * 10) / 10;
+      out.textContent = l > 0 ? l.toFixed(l % 1 === 0 ? 0 : 1) + ' зан.' : '0 зан.';
+    }
+  };
+  _setHours('mainHoursInput', k.mainHours, 3, 'mainLessonsOut');
+  _setHours('gosHoursInput', k.gosHours, 3, 'gosLessonsOut');
+  _setHours('vngHoursInput', k.vngHours, 3, 'vngLessonsOut');
+  _setHours('extraHoursInput', k.extraHours, 2, 'extraLessonsOut');
+  _setHours('porucheniyaHoursInput', k.porucheniyaHours, 3, 'porucheniyaLessonsOut');
+  document.getElementById('nonStopInput').value = k.nonStop||'';
+  document.getElementById('kpiDoneSelect').value = k.kpiDone||0;
+  updateTotalLessons();
+  document.getElementById('reviewsInput').value = k.reviews||'';
+  document.getElementById('reviewsPhotoInput').value = k.reviewsPhoto||'';
+  document.getElementById('rateInput').value = k.rate||'';
+  // Автостаж из даты приёма
+  const _prof = (state.profiles && state.profiles[curEmp]) || {};
+  if (_prof.hireDate) {
+    const _hire = new Date(_prof.hireDate);
+    const _years = (new Date() - _hire) / (1000*60*60*24*365.25);
+    k.stage = _years >= 2 ? 2 : _years >= 1 ? 1 : 0;
+    save();
+  }
+  document.getElementById('stageSelect').value = k.stage||0;
+  document.getElementById('seniorSelect').value = k.senior||0;
+  document.getElementById('teamKpiSelect').value = k.teamKpi||0;
+  document.getElementById('examinerSelect').value = k.examiner||0;
+  document.getElementById('mentorSelect').value = k.mentor||0;
+
+  updateMasterUI();
+}
+
+function getKPI() {
+  if (!state.kpi[curMonth]) state.kpi[curMonth] = [];
+  if (!state.kpi[curMonth][curEmp]) state.kpi[curMonth][curEmp] = emptyKPI();
+  return state.kpi[curMonth][curEmp];
+}
+
+function saveKPI() {
+  if (isViewOnly()) return;
+  const k = getKPI();
+  k.schedule = document.getElementById('scheduleSelect').value;
+  k.mainHours = parseFloat(document.getElementById('mainHoursInput').value)||0;
+  k.gosHours = parseFloat(document.getElementById('gosHoursInput').value)||0;
+  k.vngHours = parseFloat(document.getElementById('vngHoursInput').value)||0;
+  k.extraHours = parseFloat(document.getElementById('extraHoursInput').value)||0;
+  k.porucheniyaHours = parseFloat(document.getElementById('porucheniyaHoursInput').value)||0;
+  k.nonStop = parseInt(document.getElementById('nonStopInput').value)||0;
+  k.kpiDone = parseInt(document.getElementById('kpiDoneSelect').value)||0;
+  k.reviews = parseInt(document.getElementById('reviewsInput').value)||0;
+  k.reviewsPhoto = parseInt(document.getElementById('reviewsPhotoInput').value)||0;
+  k.rate = parseFloat(document.getElementById('rateInput').value)||0;
+  // Автостаж — если есть дата приёма, считаем автоматически
+  const prof = (state.profiles && state.profiles[curEmp]) || {};
+  if (prof.hireDate) {
+    const hire = new Date(prof.hireDate);
+    const now = new Date();
+    const yearsWorked = (now - hire) / (1000 * 60 * 60 * 24 * 365.25);
+    k.stage = yearsWorked >= 2 ? 2 : yearsWorked >= 1 ? 1 : 0;
+    document.getElementById('stageSelect').value = k.stage;
+  } else {
+    k.stage = parseInt(document.getElementById('stageSelect').value)||0;
+  }
+  k.senior = parseInt(document.getElementById('seniorSelect').value)||0;
+  k.teamKpi = parseInt(document.getElementById('teamKpiSelect').value)||0;
+  k.examiner = parseInt(document.getElementById('examinerSelect').value)||0;
+  k.mentor = parseInt(document.getElementById('mentorSelect').value)||0;
+  document.getElementById('masterScheduleLabel').textContent = 'График '+(k.schedule==='22'?'2/2':'5/2');
+  save();
+  updateMasterUI();
+}
+
+function updateMasterUI() {
+  try {
+    _updateMasterUI();
+  } catch(e) {
+    console.error('updateMasterUI error:', e);
+    // Показываем базовый интерфейс даже при ошибке
+    document.getElementById('moneyBlock').innerHTML = '<h3 style="color:#fff;font-size:15px;font-weight:800;margin-bottom:14px">💰 Расчёт мотивации</h3><div class="money-rows"><div class="mr"><span class="mr-label" style="color:rgba(255,255,255,.4)">Заполните ставку и часы для расчёта</span><span class="mr-val neu">—</span></div><div class="mr total"><span class="mr-label">ИТОГО К ВЫПЛАТЕ</span><span class="mr-val">0₽</span></div></div>';
+    // Всё равно рисуем недели
+    try {
+      const wg = document.getElementById('weeksGrid');
+      wg.innerHTML = '';
+      const dates = getWeekDates(curMonth);
+      for (let w=0; w<WEEKS; w++) {
+        const wa=weekAvg(curEmp,w); const wc=clr(wa);
+        const sel = curWeek===w ? 'sel' : '';
+        wg.innerHTML += `<div class="wnc ${sel}" onclick="selectWeek(${w})"><div class="wnt">Неделя ${w+1}</div><div class="wnd">${dates[w]}</div><div class="wnp ${wc}">${wa!==null?wa.toFixed(1)+'%':'—'}</div></div>`;
+      }
+      if (curWeek>=0) renderCriteria();
+      else document.getElementById('criteriaPanel').style.display='none';
+      renderSummary();
+    } catch(e2) { console.error('weeks render error:', e2); }
+  }
+}
+
+function _updateMasterUI() {
+  const avg = monthAvg(curEmp);
+  const cls = clr(avg);
+  document.getElementById('masterAvgNum').textContent = avg!==null ? avg.toFixed(1)+'%' : '—';
+  document.getElementById('masterAvgCircle').className = 'avg-circle '+cls;
+
+  // Motivation banner
+  let mb = '';
+  if (avg===null) mb = `<div class="motiv-banner empty"><div class="mi">📋</div><div class="mt"><div class="mtt">Данные не введены</div><div class="mts">Выберите неделю и заполните проценты по критериям</div></div></div>`;
+  else if (avg>=90) mb = `<div class="motiv-banner green"><div class="mi">✅</div><div class="mt"><div class="mtt">Здоровая клетка выполнена — +67₽ к каждому уроку</div><div class="mts">Средний % за месяц ${avg.toFixed(1)}% ≥ 90%. Мастер получает мотивационную надбавку</div></div></div>`;
+  else if (avg>=70) mb = `<div class="motiv-banner yellow"><div class="mi">📈</div><div class="mt"><div class="mtt">До надбавки не хватает ${(90-avg).toFixed(1)}%</div><div class="mts">Нужно ≥90% по всем неделям для получения +67₽/урок</div></div></div>`;
+  else mb = `<div class="motiv-banner red"><div class="mi">⚠️</div><div class="mt"><div class="mtt">Требуется работа над ошибками</div><div class="mts">Средний % ${avg.toFixed(1)}% — ниже допустимого уровня 70%</div></div></div>`;
+  document.getElementById('motivBanner').innerHTML = mb;
+
+  // Rich Master status
+  const isRich = avg!==null && avg>=90;
+  document.getElementById('richBanner').innerHTML = isRich
+    ? `<div class="rich-banner achieved"><div class="rb-icon">👑</div><div class="rb-text"><div class="rbt">БОГАТЫЙ МАСТЕР</div><div class="rbs">Все 8 критериев Здоровой клетки выполнены на уровне ≥90%. Мастер соответствует стандарту Вектора.</div></div></div>`
+    : `<div class="rich-banner not-yet"><div class="rb-icon">🎯</div><div class="rb-text"><div class="rbt">Статус «Богатый мастер» не получен</div><div class="rbs">Для получения статуса необходимо набрать ≥90% среднего за месяц по всем критериям</div></div></div>`;
+
+  // Money block
+  const {rows, total} = calcMotiv(curEmp);
+  let moneyHTML = '<h3 style="color:#fff;font-size:15px;font-weight:800;margin-bottom:14px">💰 Расчёт мотивации</h3><div class="money-rows">';
+  for (const r of rows) {
+    const valStr = r.type==='neu' ? 'норма' : (r.val===0 ? '—' : (r.val>0?'+':'')+Math.round(r.val).toLocaleString('ru')+'₽');
+    moneyHTML += `<div class="mr"><span class="mr-label">${r.label}${r.note?'<br><span style="font-size:10px;opacity:.6">'+r.note+'</span>':''}</span><span class="mr-val ${r.type}">${valStr}</span></div>`;
+  }
+  if (rows.length===0) {
+    moneyHTML += `<div class="mr"><span class="mr-label" style="color:rgba(255,255,255,.4)">Заполните параметры выше для расчёта</span><span class="mr-val neu">—</span></div>`;
+  }
+  moneyHTML += `<div class="mr total"><span class="mr-label">ИТОГО К ВЫПЛАТЕ</span><span class="mr-val">${Math.round(total).toLocaleString('ru')}₽</span></div>`;
+  moneyHTML += '</div>';
+  document.getElementById('moneyBlock').innerHTML = moneyHTML;
+
+  // Week cards
+  const wg = document.getElementById('weeksGrid');
+  wg.innerHTML = '';
+  const dates = getWeekDates(curMonth);
+  for (let w=0; w<WEEKS; w++) {
+    const wa=weekAvg(curEmp,w); const wc=clr(wa);
+    const sel = curWeek===w ? 'sel' : '';
+    wg.innerHTML += `<div class="wnc ${sel}" onclick="selectWeek(${w})">
+      <div class="wnt">Неделя ${w+1}</div>
+      <div class="wnd">${dates[w]}</div>
+      <div class="wnp ${wc}">${wa!==null?wa.toFixed(1)+'%':'—'}</div>
+    </div>`;
+  }
+
+  if (curWeek>=0) renderCriteria();
+  else document.getElementById('criteriaPanel').style.display='none';
+
+  renderSummary();
+}
+
+function selectWeek(w) {
+  curWeek = w;
+  updateMasterUI();
+  setTimeout(()=>document.getElementById('criteriaPanel').scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+}
+
+function renderCriteria() {
+  document.getElementById('criteriaPanel').style.display='block';
+  const dates = getWeekDates(curMonth);
+  document.getElementById('critWeekTitle').textContent = `Неделя ${curWeek+1} · ${dates[curWeek]}`;
+  const row = state.data[curMonth][curEmp][curWeek];
+  const avg = weekAvg(curEmp,curWeek);
+  document.getElementById('critWeekAvg').textContent = avg!==null?avg.toFixed(1)+'%':'—';
+  const list = document.getElementById('criteriaList');
+  list.innerHTML = '';
+
+  const critWeight = 100 / CRITERIA.length;
+
+  CRITERIA.forEach((c, ci) => {
+    const checks = (row[ci] && row[ci].length === c.items.length) ? row[ci] : Array(c.items.length).fill(false);
+    const itemWeight = critWeight / c.items.length;
+    const earned = checks.filter(Boolean).length * itemWeight;
+    const critPct = Math.round(earned * 10) / 10;
+
+    const section = document.createElement('div');
+    section.className = 'crit-section';
+
+    // Section header
+    const hdr = document.createElement('div');
+    hdr.className = 'crit-section-hdr';
+    hdr.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="cnum">${ci+1}</div>
+        <div class="cname-main">${c.name}</div>
+      </div>
+      <div class="crit-pct-badge ${critPct>=critWeight*0.99?'green':critPct>0?'yellow':'empty'}" id="cpct_${ci}">${critPct.toFixed(0)}%</div>
+    `;
+    section.appendChild(hdr);
+
+    // Sub-items as checkboxes
+    const itemsWrap = document.createElement('div');
+    itemsWrap.className = 'crit-items';
+    c.items.forEach((itemName, ii) => {
+      const label = document.createElement('label');
+      label.className = 'crit-item-label' + (checks[ii] ? ' checked' : '');
+      label.innerHTML = `
+        <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}">
+        <span class="cb-box"></span>
+        <span class="cb-text">${itemName}</span>
+        <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
+      `;
+      label.querySelector('input').addEventListener('change', (e) => {
+        updateCritCheck(ci, ii, e.target.checked);
+        label.className = 'crit-item-label' + (e.target.checked ? ' checked' : '');
+      });
+      itemsWrap.appendChild(label);
+    });
+    section.appendChild(itemsWrap);
+    list.appendChild(section);
+  });
+}
+
+function updateCritCheck(ci, ii, val) {
+  if (isViewOnly()) return;
+  const row = state.data[curMonth][curEmp][curWeek];
+  if (!row[ci] || row[ci].length !== CRITERIA[ci].items.length)
+    row[ci] = Array(CRITERIA[ci].items.length).fill(false);
+  row[ci][ii] = val;
+  save();
+
+  // Update section badge
+  const critWeight = 100 / CRITERIA.length;
+  const checks = row[ci];
+  const itemWeight = critWeight / CRITERIA[ci].items.length;
+  const earned = checks.filter(Boolean).length * itemWeight;
+  const badge = document.getElementById(`cpct_${ci}`);
+  if (badge) {
+    badge.textContent = earned.toFixed(0)+'%';
+    badge.className = `crit-pct-badge ${earned>=critWeight*0.99?'green':earned>0?'yellow':'empty'}`;
+  }
+
+  const avg = weekAvg(curEmp,curWeek);
+  document.getElementById('critWeekAvg').textContent = avg!==null?avg.toFixed(1)+'%':'—';
+  // Update week card
+  const cards = document.querySelectorAll('.wnc');
+  if (cards[curWeek]) {
+    const wc=clr(avg);
+    cards[curWeek].querySelector('.wnp').className=`wnp ${wc}`;
+    cards[curWeek].querySelector('.wnp').textContent=avg!==null?avg.toFixed(1)+'%':'—';
+  }
+  // Update header + money
+  const ma=monthAvg(curEmp); const mc=clr(ma);
+  document.getElementById('masterAvgNum').textContent=ma!==null?ma.toFixed(1)+'%':'—';
+  document.getElementById('masterAvgCircle').className='avg-circle '+mc;
+  const {rows,total}=calcMotiv(curEmp);
+  let mh='<h3 style="color:#fff;font-size:15px;font-weight:800;margin-bottom:14px">💰 Расчёт мотивации</h3><div class="money-rows">';
+  for(const r of rows){const vs=r.val===0?'—':(r.val>0?'+':'')+Math.round(r.val).toLocaleString('ru')+'₽';mh+=`<div class="mr"><span class="mr-label">${r.label}${r.note?'<br><span style="font-size:10px;opacity:.6">'+r.note+'</span>':''}</span><span class="mr-val ${r.type}">${vs}</span></div>`;}
+  mh+=`<div class="mr total"><span class="mr-label">ИТОГО К ВЫПЛАТЕ</span><span class="mr-val">${Math.round(total).toLocaleString('ru')}₽</span></div></div>`;
+  document.getElementById('moneyBlock').innerHTML=mh;
+
+  const isRich=ma!==null&&ma>=90;
+  document.getElementById('richBanner').innerHTML=isRich
+    ?`<div class="rich-banner achieved"><div class="rb-icon">👑</div><div class="rb-text"><div class="rbt">БОГАТЫЙ МАСТЕР</div><div class="rbs">Все 8 критериев Здоровой клетки выполнены на уровне ≥90%.</div></div></div>`
+    :`<div class="rich-banner not-yet"><div class="rb-icon">🎯</div><div class="rb-text"><div class="rbt">Статус «Богатый мастер» не получен</div><div class="rbs">Нужно набрать ≥90% среднего за месяц по всем критериям</div></div></div>`;
+
+  let mb='';
+  if(ma===null)mb=`<div class="motiv-banner empty"><div class="mi">📋</div><div class="mt"><div class="mtt">Данные не введены</div><div class="mts">Заполните критерии по неделям</div></div></div>`;
+  else if(ma>=90)mb=`<div class="motiv-banner green"><div class="mi">✅</div><div class="mt"><div class="mtt">Здоровая клетка выполнена — +67₽ к каждому уроку</div><div class="mts">Средний % ${ma.toFixed(1)}% ≥ 90%</div></div></div>`;
+  else if(ma>=70)mb=`<div class="motiv-banner yellow"><div class="mi">📈</div><div class="mt"><div class="mtt">До надбавки не хватает ${(90-ma).toFixed(1)}%</div><div class="mts">Нужно ≥90% по всем неделям</div></div></div>`;
+  else mb=`<div class="motiv-banner red"><div class="mi">⚠️</div><div class="mt"><div class="mtt">Требуется работа над ошибками</div><div class="mts">Средний % ${ma.toFixed(1)}%</div></div></div>`;
+  document.getElementById('motivBanner').innerHTML=mb;
+
+  renderSummary();
+}
+
+function critScore(row, ci) {
+  // Returns 0..critWeight for criterion ci given a week row
+  const critWeight = 100 / CRITERIA.length;
+  const checks = (row[ci] && row[ci].length === CRITERIA[ci].items.length) ? row[ci] : Array(CRITERIA[ci].items.length).fill(false);
+  const itemWeight = critWeight / CRITERIA[ci].items.length;
+  return checks.filter(Boolean).length * itemWeight;
+}
+function rowHasData(row) {
+  if (!row) return false;
+  return row.some(checks => Array.isArray(checks) && checks.some(Boolean));
+}
+
+function renderSummary() {
+  const tbody = document.getElementById('summaryBody');
+  tbody.innerHTML='';
+  const d = state.data[curMonth][curEmp];
+  CRITERIA.forEach((c,ci)=>{
+    const tr=document.createElement('tr');
+    let s=0,n=0,cells=`<td style="font-weight:600;font-size:12px">${c.name}</td>`;
+    const critWeight = 100/CRITERIA.length;
+    for(let w=0;w<WEEKS;w++){
+      const hd=rowHasData(d[w]); const val=hd?critScore(d[w],ci):null;
+      if(hd&&val!==null){s+=val;n++;}
+      const color=!hd?'#9ca3af':val>=critWeight*0.99?'var(--green)':val>0?'var(--yellow)':'var(--red)';
+      cells+=`<td style="color:${color};font-weight:600">${hd&&val!==null?val.toFixed(0)+'%':'—'}</td>`;
+    }
+    const ca=n>0?s/n:null;
+    cells+=`<td><span class="badge ${clr(ca)}">${ca!==null?ca.toFixed(1)+'%':'—'}</span></td>`;
+    tr.innerHTML=cells; tbody.appendChild(tr);
+  });
+  const tr=document.createElement('tr');tr.style.background='#f8fafc';
+  let tc=`<td style="font-weight:800">ИТОГО</td>`;
+  for(let w=0;w<WEEKS;w++){const wa=weekAvg(curEmp,w);tc+=`<td><span class="badge ${clr(wa)}">${wa!==null?wa.toFixed(1)+'%':'—'}</span></td>`;}
+  const ma=monthAvg(curEmp);tc+=`<td><span class="badge ${clr(ma)}" style="font-size:12px;padding:3px 10px">${ma!==null?ma.toFixed(1)+'%':'—'}</span></td>`;
+  tr.innerHTML=tc;tbody.appendChild(tr);
+}
+
+// ===== WEEK DATES =====
+function getWeekDates(m) {
+  const months=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const parts=m.split(' ');
+  const mi=months.findIndex(x=>x.toLowerCase()===(parts[0]||'').toLowerCase());
+  const yr=parseInt(parts[1])||new Date().getFullYear();
+  if(mi<0)return Array.from({length:WEEKS},(_,i)=>`Нед. ${i+1}`);
+  const first=new Date(yr,mi,1),last=new Date(yr,mi+1,0).getDate();
+  const dow=first.getDay()||7;
+  const starts=[];
+  if(dow>1)starts.push(1);
+  for(let d=1+(dow===1?0:8-dow);d<=last;d+=7)starts.push(d);
+  const sm=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  return Array.from({length:WEEKS},(_,i)=>i<starts.length?`${starts[i]}–${Math.min(starts[i]+6,last)} ${sm[mi]}`:'—');
+}
+
+// ===== MANAGE =====
+function switchMonth(m){curMonth=m;ensureMonth(m);save();if(document.getElementById('viewBranch').classList.contains('active'))renderBranch();else renderDash();}
+
+function resetAllData() {
+  state = {months:['Июнь 2026'], employees:[], profiles:[], data:{}, kpi:{}};
+  initializeState();
+  save();
+  showDash();
+  toast('Данные сброшены');
+}
+function openAddMonthModal(){document.getElementById('newMonthInput').value='';document.getElementById('addMonthModal').classList.add('open');setTimeout(()=>document.getElementById('newMonthInput').focus(),100);}
+function addMonth(){const v=document.getElementById('newMonthInput').value.trim();if(!v){toast('Введите название месяца');return;}if(state.months.includes(v)){toast('Такой месяц уже есть');return;}state.months.push(v);ensureMonth(v);curMonth=v;save();closeModal('addMonthModal');renderDash();toast('Месяц «'+v+'» добавлен');}
+function openAddEmpModal(){document.getElementById('newEmpInput').value='';document.getElementById('addEmpModal').classList.add('open');setTimeout(()=>document.getElementById('newEmpInput').focus(),100);}
+async function addEmployee(){
+  const v=document.getElementById('newEmpInput').value.trim();
+  if(!v){toast('Введите ФИО');return;}
+  const branch=document.getElementById('newEmpBranch').value;
+  const position=document.getElementById('newEmpPosition').value;
+  const hireDate=document.getElementById('newEmpHireDate').value;
+  const login=(document.getElementById('newEmpLogin').value.trim()||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const pass=document.getElementById('newEmpPass').value;
+
+  state.employees.push(v);
+  state.profiles.push({branch, position, hireDate, login: login||'', uid: '', pendingPass: (login && pass) ? pass : ''});
+  for(const m of state.months){
+    if(!state.data[m])state.data[m]=[];state.data[m].push(emptyEmpData());
+    if(!state.kpi[m])state.kpi[m]=[];state.kpi[m].push(emptyKPI());
+  }
+  save();
+  closeModal('addEmpModal');
+  if(document.getElementById('viewBranch').classList.contains('active'))renderBranch();else renderDash();
+  if (login && pass) {
+    toast('Мастер «'+v+'» добавлен · логин: '+login+' (активируется при первом входе)');
+  } else {
+    toast('Мастер «'+v+'» добавлен');
+  }
+}
+function deleteCurrentEmp(){if(!confirm(`Удалить мастера "${state.employees[curEmp]}"?`))return;state.employees.splice(curEmp,1);if(state.profiles)state.profiles.splice(curEmp,1);for(const m of state.months){if(state.data[m])state.data[m].splice(curEmp,1);if(state.kpi[m])state.kpi[m].splice(curEmp,1);}save();showDash();toast('Мастер удалён');}
+function deleteEmpFromDash(ei){if(!confirm(`Удалить мастера "${state.employees[ei]}"? Все данные будут потеряны.`))return;state.employees.splice(ei,1);if(state.profiles)state.profiles.splice(ei,1);for(const m of state.months){if(state.data[m])state.data[m].splice(ei,1);if(state.kpi[m])state.kpi[m].splice(ei,1);}save();if(document.getElementById('viewBranch').classList.contains('active'))renderBranch();else renderDash();toast('Мастер удалён');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ===== EXPORT =====
+function exportCSV(){
+  if(!state.employees.length){toast('Нет данных');return;}
+  const dates=getWeekDates(curMonth);
+  let rows=[];
+  const hdr=['Сотрудник','График','Уроков','Отзывов','Отзывов с фото','Ставка ₽','Стаж','Экзаменатор','Наставник','Здоровая клетка %','Мотивация итого ₽','Критерий',...Array.from({length:WEEKS},(_,i)=>`Нед.${i+1} (${dates[i]})`),'Среднее %'];
+  rows.push(hdr);
+  for(let ei=0;ei<state.employees.length;ei++){
+    const name=state.employees[ei];
+    const k=(state.kpi[curMonth]&&state.kpi[curMonth][ei])?state.kpi[curMonth][ei]:emptyKPI();
+    const sch=k.schedule==='22'?'2/2':'5/2';
+    const {total}=calcMotiv(ei);
+    const d=state.data[curMonth][ei];
+    const ma=monthAvg(ei);
+    const stageLabel=['<1 года','1 год','2+ года'][k.stage||0]||'';
+    const mainLessons = Math.floor((parseFloat(k.mainHours)||0) / 3 * 10) / 10;
+    const gosLessons = Math.floor((parseFloat(k.gosHours)||0) / 3 * 10) / 10;
+    const vngLessons = Math.floor((parseFloat(k.vngHours)||0) / 3 * 10) / 10;
+    const extraLessons = Math.floor((parseFloat(k.extraHours)||0) / 2 * 10) / 10;
+    const porLessons = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
+    CRITERIA.forEach((c,ci)=>{
+      const row=[name,sch,(mainLessons+gosLessons+vngLessons+extraLessons+porLessons).toFixed(1),extraLessons.toFixed(1),k.reviews||0,k.reviewsPhoto||0,k.rate||0,stageLabel,k.examiner?'Да':'Нет',k.mentor?'Да':'Нет',ma!==null?ma.toFixed(1):'',ci===0?Math.round(total):'',c.name];
+      let s=0,n=0;
+      for(let w=0;w<WEEKS;w++){const hd=rowHasData(d[w]);const val=hd?critScore(d[w],ci):null;if(hd&&val!==null){s+=val;n++;}row.push(hd&&val!==null?val.toFixed(0)+'%':'');}
+      row.push(n>0?(s/n).toFixed(1)+'%':'');
+      rows.push(row);
+    });
+    const tot=[name,sch,k.lessons||0,k.extraLessons||0,k.reviews||0,k.reviewsPhoto||0,k.rate||0,stageLabel,k.examiner?'Да':'Нет',k.mentor?'Да':'Нет',ma!==null?ma.toFixed(1):'',Math.round(total),'— ИТОГО —'];
+    for(let w=0;w<WEEKS;w++){const wa=weekAvg(ei,w);tot.push(wa!==null?wa.toFixed(1):'');}
+    tot.push(ma!==null?ma.toFixed(1):'');
+    rows.push(tot);rows.push([]);
+  }
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Здоровая_клетка_${curMonth}.csv`;a.click();
+  toast('Экспорт сохранён');
+}
+
+// ===== BACKUP / RESTORE =====
+function exportJSON(){
+  if(!state.employees.length){toast('Нет данных для экспорта');return;}
+  const backup = {version:1, exportedAt: new Date().toISOString(), state};
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Здоровая_клетка_бэкап_${new Date().toLocaleDateString('ru')}.json`;
+  a.click();
+  toast('✅ Бэкап сохранён!');
+}
+function importJSON(){
+  if(!confirm('Импорт заменит ВСЕ текущие данные. Продолжить?'))return;
+  document.getElementById('importFileInput').click();
+}
+function handleImportFile(e){
+  const file = e.target.files[0];
+  if(!file)return;
+  const reader = new FileReader();
+  reader.onload = async function(ev){
+    try{
+      const backup = JSON.parse(ev.target.result);
+      if(!backup.state || !backup.state.employees) throw new Error('Неверный формат файла');
+      state = backup.state;
+      curMonth = state.months[state.months.length-1] || '';
+      await save();
+      renderDash();
+      toast('✅ Данные восстановлены! Мастеров: ' + state.employees.length);
+    } catch(err){
+      toast('❌ Ошибка: ' + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ===== TOAST =====
+function toast(msg){const c=document.getElementById('toastC');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},3000);}
+
+// ===== AUTH =====
+function applyRoleUI() {
+  const isDirector = currentRole === 'director';
+  document.body.dataset.role = currentRole || 'admin';
+  // Скрываем кнопки редактирования для директора
+  const editBtns = [
+    document.querySelector('button[onclick*="resetAllData"]'),
+    document.querySelector('button[onclick*="openAddMonthModal"]'),
+    document.querySelector('button[onclick*="importJSON"]'),
+    document.querySelector('button[onclick*="exportJSON"]'),
+  ];
+  editBtns.forEach(btn => { if (btn) btn.style.display = isDirector ? 'none' : ''; });
+
+  // Метка роли в шапке
+  let roleTag = document.getElementById('roleTag');
+  if (!roleTag) {
+    roleTag = document.createElement('div');
+    roleTag.id = 'roleTag';
+    roleTag.style.cssText = 'font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8)';
+    document.querySelector('.hdr-nav').prepend(roleTag);
+  }
+  roleTag.textContent = isDirector ? '👁 Директор' : '⚙️ Администратор';
+}
+
+async function doLogin() {
+  let input = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  if (!input || !password) { errEl.textContent = 'Введите логин и пароль'; return; }
+  const email = input.includes('@') ? input : input.toLowerCase().replace(/[^a-z0-9]/g,'') + '@vector-mpov.ru';
+  document.querySelector('.login-btn').textContent = 'Входим...';
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch(e) {
+    // If user not found, try to auto-register from pendingPass
+    if ((e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') && !input.includes('@')) {
+      const login = input.toLowerCase().replace(/[^a-z0-9]/g,'');
+      // Load state first if needed
+      if (!state.employees.length) await load();
+      const idx = state.profiles ? state.profiles.findIndex(p => p && p.login === login) : -1;
+      if (idx >= 0 && state.profiles[idx].pendingPass === password) {
+        try {
+          await auth.createUserWithEmailAndPassword(email, password);
+          state.profiles[idx].pendingPass = '';
+          await save();
+          return; // onAuthStateChanged will handle the rest
+        } catch(e2) {
+          errEl.textContent = 'Ошибка создания аккаунта: ' + e2.message;
+          document.querySelector('.login-btn').textContent = 'Войти';
+          return;
+        }
+      }
+    }
+    document.querySelector('.login-btn').textContent = 'Войти';
+    errEl.textContent = 'Неверный логин или пароль';
+  }
+}
+async function doLogout() {
+  await auth.signOut();
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', async ()=>{
+  document.getElementById('loginEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginPassword').focus(); });
+  document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  document.querySelectorAll('button').forEach(b=>{ if(!b.hasAttribute('type')) b.type = 'button'; });
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+  document.getElementById('newMonthInput').addEventListener('keydown',e=>{if(e.key==='Enter')addMonth();});
+  document.getElementById('newEmpInput').addEventListener('keydown',e=>{if(e.key==='Enter')addEmployee();});
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      document.getElementById('loginScreen').classList.add('active');
+      document.querySelector('.hdr').style.display = 'none';
+      document.querySelector('.main').style.display = 'none';
+      document.getElementById('masterCab').classList.remove('active');
+      document.querySelector('.login-btn').textContent = 'Войти';
+      return;
+    }
+    currentUser = user;
+    document.getElementById('loginScreen').classList.remove('active');
+
+    if (user.email === ADMIN_EMAIL) {
+      // АДМИНИСТРАТОР
+      currentRole = 'admin';
+      document.querySelector('.hdr').style.display = '';
+      document.querySelector('.main').style.display = '';
+      document.getElementById('masterCab').classList.remove('active');
+      await initDB();
+      await load();
+      applyRoleUI();
+      renderDash();
+    } else if (user.email === DIRECTOR_LOGIN + '@vector-mpov.ru') {
+      // ДИРЕКТОР — видит всё, но не может редактировать
+      currentRole = 'director';
+      document.querySelector('.hdr').style.display = '';
+      document.querySelector('.main').style.display = '';
+      document.getElementById('masterCab').classList.remove('active');
+      await initDB();
+      await load();
+      applyRoleUI();
+      renderDash();
+    } else {
+      // МАСТЕР — ищем по email в профилях
+      currentRole = 'master';
+      document.querySelector('.hdr').style.display = 'none';
+      document.querySelector('.main').style.display = 'none';
+      await initDB();
+      await load();
+      const empIdx = findEmpByEmail(user.email);
+      if (empIdx >= 0) {
+        showMasterCabinet(empIdx);
+      } else {
+        document.getElementById('loginScreen').classList.add('active');
+        document.getElementById('loginErr').textContent = 'Мастер не найден в системе. Обратитесь к администратору.';
+        await auth.signOut();
+      }
+    }
+  });
+});
+
+function findEmpByEmail(email) {
+  if (!state.profiles) return -1;
+  // Match by login@vector-mpov.ru or by stored uid
+  const login = email.replace('@vector-mpov.ru', '').toLowerCase();
+  return state.profiles.findIndex(p => p && (
+    (p.login && p.login.toLowerCase() === login) ||
+    (p.email && p.email.toLowerCase() === email.toLowerCase())
+  ));
+}
+
+let cabEmpIdx = -1;
+let cabSelWeek = -1;
+
+function showMasterCabinet(empIdx) {
+  cabEmpIdx = empIdx;
+  document.getElementById('masterCab').classList.add('active');
+  const name = state.employees[empIdx] || 'Мастер';
+  const prof = (state.profiles && state.profiles[empIdx]) || {};
+  const posLabel = prof.position === 'senior' ? 'Старший МПОВ' : prof.position === 'examiner' ? 'МПОВ Экзаменатор' : 'МПОВ';
+  document.getElementById('cabName').textContent = name;
+  document.getElementById('cabSub').textContent = posLabel + ' · Вектор · ' + (prof.branch || '');
+  // Initials
+  const parts = name.split(' ');
+  document.getElementById('cabAvatarInitials').textContent = parts.map(p=>p[0]||'').join('').slice(0,2).toUpperCase();
+  // Load photo if exists
+  const photoKey = 'cab_photo_' + empIdx;
+  try {
+    const photo = localStorage.getItem(photoKey);
+    if (photo) {
+      document.getElementById('cabAvatarInitials').innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+  } catch(e) {}
+
+  const sel = document.getElementById('cabMonthSel');
+  sel.innerHTML = state.months.map(m => `<option value="${m}">${m}</option>`).join('');
+  sel.value = curMonth;
+  sel.dataset.empIdx = empIdx;
+  renderCabinet();
+}
+
+function renderCabinet() {
+  const sel = document.getElementById('cabMonthSel');
+  const empIdx = parseInt(sel.dataset.empIdx);
+  const month = sel.value;
+  curMonth = month;
+  cabSelWeek = -1;
+  document.getElementById('cabCritPanel').style.display = 'none';
+
+  const k = (state.kpi[month] && state.kpi[month][empIdx]) ? state.kpi[month][empIdx] : emptyKPI();
+  const ma = monthAvg(empIdx);
+  const maCls = ma === null ? 'dark' : ma >= 90 ? 'green' : ma >= 70 ? 'yellow' : 'red';
+  const {total} = calcMotiv(empIdx);
+
+  // Занятия
+  const mainL = Math.floor((parseFloat(k.mainHours)||0) / 3 * 10) / 10;
+  const gosL = Math.floor((parseFloat(k.gosHours)||0) / 3 * 10) / 10;
+  const vngL = Math.floor((parseFloat(k.vngHours)||0) / 3 * 10) / 10;
+  const extraL = Math.floor((parseFloat(k.extraHours)||0) / 2 * 10) / 10;
+  const porL = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
+  const nonStop = parseInt(k.nonStop)||0;
+  const totalL = mainL + gosL + vngL + extraL + porL;
+
+  // Стаж
+  const stageLabels = ['< 1 года', '1 год', '2+ года'];
+  const stageLabel = stageLabels[k.stage||0] || '—';
+
+  // Дата приёма
+  const prof = (state.profiles && state.profiles[empIdx]) || {};
+  let hireLabel = '—';
+  if (prof.hireDate) {
+    const d = new Date(prof.hireDate);
+    hireLabel = d.toLocaleDateString('ru', {day:'numeric', month:'long', year:'numeric'});
+  }
+
+  document.getElementById('cabKpiGrid').innerHTML = `
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Здоровая клетка</div><div class="cab-kpi-val ${maCls}">${ma !== null ? ma.toFixed(1)+'%' : '—'}</div><div class="cab-kpi-sub">за месяц</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Мотивация</div><div class="cab-kpi-val green">${Math.round(total).toLocaleString('ru')} ₽</div><div class="cab-kpi-sub">итого за месяц</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Всего занятий</div><div class="cab-kpi-val blue">${totalL.toFixed(1)}</div><div class="cab-kpi-sub">осн. + ГОС + ВНГ + доп</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Доп. занятия</div><div class="cab-kpi-val blue">${extraL.toFixed(1)}</div><div class="cab-kpi-sub">нон-стоп: ${nonStop} шт.</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Отзывы</div><div class="cab-kpi-val dark">${k.reviews||0}</div><div class="cab-kpi-sub">с фото: ${k.reviewsPhoto||0}</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Стаж</div><div class="cab-kpi-val dark" style="font-size:16px">${stageLabel}</div><div class="cab-kpi-sub">принят: ${hireLabel}</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">Ставка</div><div class="cab-kpi-val dark">${(k.rate||0).toLocaleString('ru')} ₽</div><div class="cab-kpi-sub">за занятие</div></div>
+    <div class="cab-kpi-card"><div class="cab-kpi-label">KPI</div><div class="cab-kpi-val ${parseInt(k.kpiDone)?'green':'red'}" style="font-size:16px">${parseInt(k.kpiDone)?'✅ Выполнен':'❌ Не выполнен'}</div><div class="cab-kpi-sub">+67₽/зан. если выполнен</div></div>
+  `;
+
+  // Недели
+  const dates = getWeekDates(month);
+  let html = '';
+  for (let w = 0; w < 5; w++) {
+    const wa = weekAvg(empIdx, w);
+    const wCls = wa === null ? 'empty' : wa >= 90 ? 'green' : wa >= 70 ? 'yellow' : 'red';
+    const pct = wa !== null ? Math.round(wa) : 0;
+    html += `<div class="cab-week-card ${wCls}" onclick="cabShowWeek(${w})">
+      <div class="cwh">
+        <div><div class="cwh-title">Неделя ${w+1}</div><div class="cwh-date">${dates[w]||''}</div></div>
+        <div class="cwh-pct ${wCls}">${wa !== null ? wa.toFixed(0)+'%' : '—'}</div>
+      </div>
+      <div class="cw-bar"><div class="cw-bar-fill ${wCls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  document.getElementById('cabWeeks').innerHTML = html;
+}
+
+function cabShowWeek(w) {
+  const sel = document.getElementById('cabMonthSel');
+  const empIdx = parseInt(sel.dataset.empIdx);
+  const month = sel.value;
+  const d = (state.data[month] && state.data[month][empIdx] && state.data[month][empIdx][w]) || null;
+  const dates = getWeekDates(month);
+  const wa = weekAvg(empIdx, w);
+  const panel = document.getElementById('cabCritPanel');
+
+  if (!d || !rowHasData(d)) {
+    panel.style.display = 'block';
+    panel.innerHTML = `<div class="cab-crit-panel"><div class="cab-crit-title">Неделя ${w+1} · ${dates[w]||''}</div><div style="color:var(--muted);font-size:13px">Оценки за эту неделю ещё не выставлены</div></div>`;
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    return;
+  }
+
+  let html = `<div class="cab-crit-panel"><div class="cab-crit-title">📋 Неделя ${w+1} · ${dates[w]||''} <span class="badge ${wa>=90?'green':wa>=70?'yellow':'red'}" style="margin-left:auto">${wa!==null?wa.toFixed(1)+'%':'—'}</span></div>`;
+  CRITERIA.forEach((crit, ci) => {
+    const items = d[ci] || [];
+    const checked = Array.isArray(items) ? items.filter(Boolean).length : 0;
+    const total = crit.items.length;
+    const pct = total > 0 ? Math.round(checked/total*100) : 0;
+    html += `<div class="cab-crit-section">
+      <div class="cab-crit-sec-name">${crit.name} — ${pct}%</div>`;
+    crit.items.forEach((item, ii) => {
+      const done = Array.isArray(items) ? !!items[ii] : false;
+      html += `<div class="cab-crit-item">
+        <div class="cab-check ${done?'yes':'no'}">${done?'✓':'✗'}</div>
+        <span style="${done?'':'color:var(--muted)'}">${item}</span>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  panel.style.display = 'block';
+  panel.innerHTML = html;
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function triggerPhotoUpload() {
+  document.getElementById('cabPhotoInput').click();
+}
+
+function handlePhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const data = ev.target.result;
+    try { localStorage.setItem('cab_photo_' + cabEmpIdx, data); } catch(_) {}
+    document.getElementById('cabAvatarInitials').innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    toast('Фото обновлено!');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===== EDIT EMPLOYEE =====
+let editingEmpIdx = -1;
+function openEditEmp(ei) {
+  editingEmpIdx = ei;
+  const prof = (state.profiles && state.profiles[ei]) || {};
+  document.getElementById('editEmpName').value = state.employees[ei] || '';
+  document.getElementById('editEmpBranch').value = prof.branch || 'Кирова';
+  document.getElementById('editEmpPosition').value = prof.position || 'mpov';
+  document.getElementById('editEmpHireDate').value = prof.hireDate || '';
+  document.getElementById('editEmpLogin').value = prof.login || '';
+  document.getElementById('editEmpPass').value = '';
+  document.getElementById('editEmpModal').classList.add('open');
+  setTimeout(()=>document.getElementById('editEmpName').focus(), 100);
+}
+async function saveEditEmp() {
+  const ei = editingEmpIdx;
+  if (ei < 0) return;
+  const name = document.getElementById('editEmpName').value.trim();
+  if (!name) { toast('Введите ФИО'); return; }
+  state.employees[ei] = name;
+  if (!state.profiles) state.profiles = [];
+  while (state.profiles.length <= ei) state.profiles.push({branch:'Кирова',position:'mpov',hireDate:'',login:'',uid:''});
+  
+  const login = (document.getElementById('editEmpLogin').value.trim()||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const pass = document.getElementById('editEmpPass').value;
+  const oldProf = state.profiles[ei] || {};
+
+  state.profiles[ei] = {
+    branch: document.getElementById('editEmpBranch').value,
+    position: document.getElementById('editEmpPosition').value,
+    hireDate: document.getElementById('editEmpHireDate').value,
+    login: login || oldProf.login || '',
+    uid: oldProf.uid || '',
+  };
+
+  if (login && pass && pass.length >= 6) {
+    state.profiles[ei].pendingPass = pass;
+  }
+
+  save();
+  closeModal('editEmpModal');
+  if (curEmp === ei) renderMaster();
+  if(document.getElementById('viewBranch').classList.contains('active'))renderBranch();else renderDash();
+  toast('Данные обновлены');
+}
+</script>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen active" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="hdr-v" style="width:48px;height:48px;background:#1a1d2e;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 60 55" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <line x1="8" y1="8" x2="20" y2="48" stroke="#C8102E" stroke-width="7" stroke-linecap="round"/>
+          <line x1="18" y1="8" x2="34" y2="48" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+          <line x1="34" y1="48" x2="52" y2="6" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+          <polyline points="40,6 52,6 52,18" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text)">Вектор</div>
+        <div style="font-size:11px;color:var(--muted)">Здоровая клетка</div>
+      </div>
+    </div>
+    <div class="login-title">Вход в систему</div>
+    <div class="login-sub">Введите логин и пароль для входа</div>
+    <div class="login-field">
+      <label>Логин</label>
+      <input type="text" id="loginEmail" placeholder="например: ivanov" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Пароль</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Войти</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- MASTER CABINET -->
+<div class="master-cab" id="masterCab">
+  <div class="cab-hdr">
+    <div class="cab-hdr-inner">
+      <div class="cab-avatar cab-photo-wrap" id="cabAvatarWrap" onclick="triggerPhotoUpload()">
+        <span id="cabAvatarInitials">М</span>
+        <div class="cab-photo-overlay">📷</div>
+        <input type="file" id="cabPhotoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+      </div>
+      <div class="cab-hdr-info">
+        <div class="cab-name" id="cabName">—</div>
+        <div class="cab-sub" id="cabSub">Мастер · Вектор</div>
+      </div>
+      <button class="cab-logout" onclick="doLogout()">Выйти</button>
+    </div>
+  </div>
+  <div class="cab-body">
+    <select class="cab-month-sel" id="cabMonthSel" onchange="renderCabinet()"></select>
+    <div class="cab-kpi-grid" id="cabKpiGrid"></div>
+    <div class="sec-title" style="margin-bottom:12px">Недели месяца</div>
+    <div class="cab-weeks-grid" id="cabWeeks"></div>
+    <div id="cabCritPanel" style="display:none"></div>
+  </div>
+</div>
+
+</body>
+</html>
