@@ -1362,6 +1362,7 @@ function showBranch() {
 }
 
 function renderMaster() {
+  loadPDDResultsForAdmin(curEmp);
   const name = state.employees[curEmp];
   const k = getKPI();
   document.getElementById('masterName').textContent = name;
@@ -1478,6 +1479,18 @@ function updateMasterUI() {
   }
 }
 
+async function loadPDDResultsForAdmin(empIdx) {
+  try {
+    const snap = await firestore.collection('pdd_results')
+      .where('__name__', '>=', `pdd_${empIdx}_`)
+      .where('__name__', '<', `pdd_${empIdx}a`)
+      .get();
+    snap.docs.forEach(doc => {
+      try { localStorage.setItem(doc.id, JSON.stringify(doc.data())); } catch(e) {}
+    });
+  } catch(e) { console.warn('PDD admin load error:', e); }
+}
+
 function _updateMasterUI() {
   const avg = monthAvg(curEmp);
   const cls = clr(avg);
@@ -1519,10 +1532,22 @@ function _updateMasterUI() {
   for (let w=0; w<WEEKS; w++) {
     const wa=weekAvg(curEmp,w); const wc=clr(wa);
     const sel = curWeek===w ? 'sel' : '';
+    // PDD status
+    let pddTag = '';
+    try {
+      const pddData = localStorage.getItem(getPDDWeekKey(curEmp, w));
+      if (pddData) {
+        const r = JSON.parse(pddData);
+        pddTag = r.passed 
+          ? `<div style="font-size:10px;font-weight:700;color:var(--green);margin-top:4px">✅ ПДД сдан</div>`
+          : `<div style="font-size:10px;font-weight:700;color:var(--red);margin-top:4px">❌ ПДД не сдан</div>`;
+      }
+    } catch(e) {}
     wg.innerHTML += `<div class="wnc ${sel}" onclick="selectWeek(${w})">
       <div class="wnt">Неделя ${w+1}</div>
       <div class="wnd">${dates[w]}</div>
       <div class="wnp ${wc}">${wa!==null?wa.toFixed(1)+'%':'—'}</div>
+      ${pddTag}
     </div>`;
   }
 
@@ -2047,9 +2072,14 @@ async function openPDD() {
   pddWeekIdx = getCurrentWeekIdx();
   const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
   
-  // Check if already attempted this week
+  // Check if already attempted this week - first Firebase, then localStorage
   let attempt = null;
-  try { attempt = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+  try {
+    const snap = await firestore.collection('pdd_results').doc(key).get();
+    if (snap.exists) attempt = snap.data();
+  } catch(e) {
+    try { attempt = JSON.parse(localStorage.getItem(key)); } catch(e2) {}
+  }
   
   const body = document.getElementById('pddBody');
   document.getElementById('pddScreen').classList.add('active');
@@ -2083,7 +2113,7 @@ async function openPDD() {
   startPDDTimer();
 }
 
-function closePDD() {
+async function closePDD() {
   // If test is in progress - count as failed
   if (pddTimer && pddQuestions.length > 0) {
     clearInterval(pddTimer);
@@ -2092,6 +2122,7 @@ function closePDD() {
     const correct = pddAnswers.filter((a, i) => i < pddCurrent && a === pddQuestions[i].c).length;
     const result = {correct, passed: false, date: new Date().toISOString(), week: pddWeekIdx, aborted: true};
     try { localStorage.setItem(key, JSON.stringify(result)); } catch(e) {}
+    try { await firestore.collection('pdd_results').doc(key).set(result); } catch(e) {}
     toast('❌ Тест закрыт — засчитан как не сданный');
   }
   pddQuestions = [];
@@ -2174,10 +2205,13 @@ async function finishPDD() {
   const correct = pddAnswers.filter((a, i) => a === pddQuestions[i].c).length;
   const passed = correct >= 18;
   
-  // Save result
+  // Save result to Firebase
   const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
   const result = {correct, passed, date: new Date().toISOString(), week: pddWeekIdx};
   try { localStorage.setItem(key, JSON.stringify(result)); } catch(e) {}
+  try {
+    await firestore.collection('pdd_results').doc(key).set(result);
+  } catch(e) { console.warn('Firebase PDD save error:', e); }
   
   // Auto-set checkbox if passed
   if (passed) {
@@ -2215,15 +2249,25 @@ async function autoSetPDDCheckbox(empIdx, weekIdx) {
 
 
 // ===== PDD RESET =====
-function resetPDDForEmp(empIdx) {
+async function resetPDDForEmp(empIdx) {
   if (!confirm('Сбросить результат теста ПДД для этого мастера? Он сможет пройти тест заново.')) return;
-  // Find all PDD keys for this employee and remove them
+  try {
+    // Delete all PDD results for this employee from Firebase
+    const snapshot = await firestore.collection('pdd_results')
+      .where('__name__', '>=', `pdd_${empIdx}_`)
+      .where('__name__', '<', `pdd_${empIdx}a`)
+      .get();
+    const batch = firestore.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+  } catch(e) {
+    console.warn('Firebase reset error:', e);
+  }
+  // Also clear localStorage
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(`pdd_${empIdx}_`)) {
-      keysToRemove.push(key);
-    }
+    if (key && key.startsWith(`pdd_${empIdx}_`)) keysToRemove.push(key);
   }
   keysToRemove.forEach(key => localStorage.removeItem(key));
   toast(`✅ Тест ПДД сброшен — мастер может пройти заново`);
@@ -2399,9 +2443,19 @@ function findEmpByEmail(email) {
 let cabEmpIdx = -1;
 let cabSelWeek = -1;
 
-function showMasterCabinet(empIdx) {
+async function showMasterCabinet(empIdx) {
   cabEmpIdx = empIdx;
   document.getElementById('masterCab').classList.add('active');
+  // Load PDD results from Firebase to localStorage cache
+  try {
+    const snap = await firestore.collection('pdd_results')
+      .where('__name__', '>=', `pdd_${empIdx}_`)
+      .where('__name__', '<', `pdd_${empIdx}a`)
+      .get();
+    snap.docs.forEach(doc => {
+      try { localStorage.setItem(doc.id, JSON.stringify(doc.data())); } catch(e) {}
+    });
+  } catch(e) { console.warn('PDD load error:', e); }
   const name = state.employees[empIdx] || 'Мастер';
   const prof = (state.profiles && state.profiles[empIdx]) || {};
   const posLabel = prof.position === 'senior' ? 'Старший МПОВ' : prof.position === 'examiner' ? 'МПОВ Экзаменатор' : 'МПОВ';
@@ -2492,12 +2546,24 @@ function renderCabinet() {
     const wa = weekAvg(empIdx, w);
     const wCls = wa === null ? 'empty' : wa >= 90 ? 'green' : wa >= 70 ? 'yellow' : 'red';
     const pct = wa !== null ? Math.round(wa) : 0;
+    // Check PDD status from Firebase (async - we'll load separately)
+    const pddKey = getPDDWeekKey(empIdx, w);
+    let pddBadge = '';
+    try {
+      const stored = localStorage.getItem(pddKey);
+      if (stored) {
+        const r = JSON.parse(stored);
+        pddBadge = r.passed ? '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>' 
+                            : '<span style="font-size:11px;font-weight:700;color:var(--red)">❌ ПДД не сдан</span>';
+      }
+    } catch(e) {}
     html += `<div class="cab-week-card ${wCls}" onclick="cabShowWeek(${w})">
       <div class="cwh">
         <div><div class="cwh-title">Неделя ${w+1}</div><div class="cwh-date">${dates[w]||''}</div></div>
         <div class="cwh-pct ${wCls}">${wa !== null ? wa.toFixed(0)+'%' : '—'}</div>
       </div>
       <div class="cw-bar"><div class="cw-bar-fill ${wCls}" style="width:${pct}%"></div></div>
+      ${pddBadge ? `<div style="margin-top:8px">${pddBadge}</div>` : ''}
     </div>`;
   }
   document.getElementById('cabWeeks').innerHTML = html;
