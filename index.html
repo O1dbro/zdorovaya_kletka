@@ -339,6 +339,42 @@
   .cab-photo-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:none;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;}
   .cab-avatar:hover .cab-photo-overlay{display:flex;}
 
+
+  /* PDD TEST */
+  .pdd-screen{display:none;position:fixed;inset:0;background:#f7f8fc;z-index:500;overflow-y:auto;}
+  .pdd-screen.active{display:block;}
+  .pdd-hdr{background:linear-gradient(135deg,#1a1d2e,#2d3155);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+  .pdd-hdr-title{color:#fff;font-size:16px;font-weight:800;}
+  .pdd-hdr-sub{color:rgba(255,255,255,.5);font-size:12px;margin-top:2px;}
+  .pdd-close{background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
+  .pdd-body{max-width:700px;margin:0 auto;padding:28px 20px 60px;}
+  .pdd-progress{background:#e5e7eb;border-radius:4px;height:6px;margin-bottom:24px;overflow:hidden;}
+  .pdd-progress-fill{height:100%;background:var(--red);border-radius:4px;transition:width .3s;}
+  .pdd-timer{text-align:center;font-size:28px;font-weight:900;color:var(--text);margin-bottom:20px;}
+  .pdd-timer.warn{color:var(--red);}
+  .pdd-q-num{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+  .pdd-question{font-size:17px;font-weight:700;color:var(--text);margin-bottom:24px;line-height:1.5;}
+  .pdd-answers{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+  .pdd-answer{background:#fff;border:2px solid var(--border);border-radius:12px;padding:14px 18px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;text-align:left;font-family:inherit;}
+  .pdd-answer:hover{border-color:var(--red);background:#fff9f9;}
+  .pdd-answer.selected{border-color:#2563eb;background:#eff6ff;}
+  .pdd-answer.correct{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+  .pdd-answer.wrong{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+  .pdd-next{width:100%;padding:14px;border-radius:12px;border:none;background:var(--red);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:none;}
+  .pdd-next:hover{background:var(--red-dark);}
+  /* Result screen */
+  .pdd-result{text-align:center;padding:40px 20px;}
+  .pdd-result-icon{font-size:64px;margin-bottom:16px;}
+  .pdd-result-title{font-size:26px;font-weight:900;margin-bottom:8px;}
+  .pdd-result-score{font-size:18px;color:var(--muted);margin-bottom:28px;}
+  .pdd-result-badge{display:inline-block;padding:10px 24px;border-radius:20px;font-size:15px;font-weight:800;margin-bottom:28px;}
+  .pdd-result-badge.pass{background:var(--green-bg);color:var(--green);}
+  .pdd-result-badge.fail{background:var(--red-bg);color:var(--red);}
+  /* Locked state */
+  .pdd-locked{text-align:center;padding:40px 20px;}
+  .pdd-locked-icon{font-size:48px;margin-bottom:16px;}
+  .pdd-locked-title{font-size:20px;font-weight:800;margin-bottom:8px;}
+  .pdd-locked-sub{font-size:14px;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -1899,6 +1935,257 @@ async function bulkCreateAccounts() {
   toast(`Создано: ${created} · Уже было: ${skipped} · Ошибок: ${errors}`);
 }
 
+// PDD questions loaded dynamically from jsDelivr CDN
+let PDD_QUESTIONS = [];
+let pddQuestionsLoaded = false;
+
+async function loadPDDQuestions() {
+  if (pddQuestionsLoaded && PDD_QUESTIONS.length > 0) return true;
+  try {
+    const url = 'https://o1dbro.github.io/zdorovaya_kletka/questions/A_B.json';
+    const resp = await fetch(url);
+    const data = await resp.json();
+    // Convert format: {question, answers:[{answer_text, is_correct}]} → {q, a, c}
+    const BASE_URL = 'https://o1dbro.github.io/zdorovaya_kletka/';
+    PDD_QUESTIONS = data
+      .filter(item => item.question && item.answers && item.answers.length >= 2)
+      .map(item => ({
+        q: item.question,
+        a: item.answers.map(a => a.answer_text),
+        c: item.answers.findIndex(a => a.is_correct),
+        img: item.image ? BASE_URL + item.image.replace('./', '') : null
+      }))
+      .filter(item => item.c >= 0);
+    pddQuestionsLoaded = true;
+    console.log('PDD questions loaded:', PDD_QUESTIONS.length);
+    return true;
+  } catch(e) {
+    console.warn('Failed to load PDD from CDN, using fallback:', e);
+    // Fallback to built-in questions
+    PDD_QUESTIONS = PDD_FALLBACK;
+    pddQuestionsLoaded = true;
+    return false;
+  }
+}
+
+// Fallback questions in case CDN is unavailable
+const PDD_FALLBACK = [
+  {q:"Что означает термин «Обгон»?",a:["Опережение одного или нескольких ТС, связанное с выездом на полосу встречного движения","Опережение одного или нескольких ТС без выезда на встречную полосу","Движение со скоростью большей чем попутное ТС"],c:0},
+  {q:"Что означает термин «Уступить дорогу»?",a:["Остановиться","Не начинать/замедлиться, если это может вынудить участника изменить скорость или направление","Съехать на обочину"],c:1},
+  {q:"С какой максимальной скоростью разрешено движение в населённом пункте?",a:["40 км/ч","60 км/ч","80 км/ч"],c:1},
+  {q:"С какой максимальной скоростью разрешено движение в жилой зоне?",a:["10 км/ч","20 км/ч","30 км/ч"],c:1},
+  {q:"Разрешается ли обгон на пешеходном переходе?",a:["Запрещается","Разрешается при отсутствии пешеходов","Разрешается при зелёном сигнале"],c:0},
+  {q:"Кому принадлежит преимущество на нерегулируемом перекрёстке равнозначных дорог?",a:["Тому кто едет прямо","ТС приближающемуся справа","Тому кто едет быстрее"],c:1},
+  {q:"На каком расстоянии от ж/д переезда запрещена стоянка?",a:["Ближе 50 м","Ближе 100 м","Ближе 30 м"],c:0},
+  {q:"Разрешён ли разворот в тоннеле?",a:["Запрещён","Разрешён если нет знаков","Разрешён при ширине более 6 м"],c:0},
+  {q:"Что запрещается при движении по автомагистрали?",a:["Движение выше 110 км/ч","Движение задним ходом","Обгон тихоходных ТС"],c:1},
+  {q:"При каком остатке протектора шин запрещается эксплуатация легкового авто?",a:["Менее 1,6 мм","Менее 2 мм","Менее 0,5 мм"],c:0},
+  {q:"Какие документы обязан иметь водитель при себе?",a:["ВУ, СТС, полис ОСАГО","Только водительское удостоверение","Паспорт и ВУ"],c:0},
+  {q:"Что должен сделать водитель при приближении скорой помощи со спецсигналами?",a:["Уступить дорогу","Остановиться у правого края","Продолжать движение"],c:0},
+  {q:"В каких случаях включается ближний свет фар?",a:["В тёмное время и при недостаточной видимости","Только в тёмное время","Только в тоннелях"],c:0},
+  {q:"Разрешается ли употреблять алкоголь после ДТП до освидетельствования?",a:["Разрешается немного","Запрещается","Разрешается если нет пострадавших"],c:1},
+  {q:"На каком расстоянии вне нас. пункта выставляется знак аварийной остановки?",a:["Не менее 30 м","Не менее 50 м","Не менее 100 м"],c:1},
+  {q:"На каком расстоянии в нас. пункте выставляется знак аварийной остановки?",a:["Не менее 15 м","Не менее 20 м","Не менее 30 м"],c:0},
+  {q:"Обязан ли водитель при ДТП выставить знак аварийной остановки?",a:["Обязан","Не обязан","Только если есть пострадавшие"],c:0},
+  {q:"Что означает мигающий жёлтый сигнал светофора?",a:["Стоп","Проехать с особой осторожностью","Разрешено движение"],c:1},
+  {q:"Разрешается ли движение транспортных средств по тротуарам?",a:["Запрещается","Разрешается в случаях предусмотренных ПДД","Разрешается при отсутствии пешеходов"],c:1},
+  {q:"Что означает термин «Прилегающая территория»?",a:["Территория не предназначенная для сквозного движения","Территория дворов","Любая территория рядом с дорогой"],c:0},
+]
+
+// ===== PDD TEST =====
+let pddQuestions = [];
+let pddCurrent = 0;
+let pddAnswers = [];
+let pddTimer = null;
+let pddTimeLeft = 0;
+let pddEmpIdx = -1;
+let pddWeekIdx = -1;
+
+function getPDDWeekKey(empIdx, weekIdx) {
+  return `pdd_${empIdx}_${curMonth}_w${weekIdx}`;
+}
+
+function getCurrentWeekIdx() {
+  // Get current week number based on date
+  const now = new Date();
+  const dates = getWeekDates(curMonth);
+  for (let i = 0; i < dates.length; i++) {
+    if (dates[i]) {
+      const parts = dates[i].split('–');
+      // Simple: return week based on current day of month
+    }
+  }
+  // Fallback: week by day of month
+  const day = now.getDate();
+  if (day <= 7) return 0;
+  if (day <= 14) return 1;
+  if (day <= 21) return 2;
+  if (day <= 28) return 3;
+  return 4;
+}
+
+async function openPDD() {
+  pddEmpIdx = cabEmpIdx;
+  pddWeekIdx = getCurrentWeekIdx();
+  const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
+  
+  // Check if already attempted this week
+  let attempt = null;
+  try { attempt = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+  
+  const body = document.getElementById('pddBody');
+  document.getElementById('pddScreen').classList.add('active');
+  
+  if (attempt) {
+    // Show locked or result
+    const passedTxt = attempt.passed ? '✅ Сдан' : '❌ Не сдан';
+    const cls = attempt.passed ? 'pass' : 'fail';
+    body.innerHTML = `<div class="pdd-locked">
+      <div class="pdd-locked-icon">${attempt.passed ? '🏆' : '🔒'}</div>
+      <div class="pdd-locked-title">Тест уже пройден на этой неделе</div>
+      <div class="pdd-locked-sub">Результат: ${attempt.correct} из 20 правильных · <span class="${cls}">${passedTxt}</span></div>
+      <div class="pdd-locked-sub" style="margin-top:8px">Следующая попытка на следующей неделе</div>
+    </div>`;
+    document.getElementById('pddScreen').classList.add('active');
+    return;
+  }
+  
+  // Load questions from CDN
+  body.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">📡</div><div style="font-size:15px;font-weight:600">Загрузка вопросов...</div></div>';
+  await loadPDDQuestions();
+  
+  // Shuffle and pick 20 questions
+  const shuffled = [...PDD_QUESTIONS].sort(() => Math.random() - 0.5);
+  pddQuestions = shuffled.slice(0, 20);
+  pddCurrent = 0;
+  pddAnswers = new Array(20).fill(-1);
+  pddTimeLeft = 20 * 60; // 20 minutes
+  
+  renderPDDQuestion();
+  startPDDTimer();
+}
+
+function closePDD() {
+  if (pddTimer) clearInterval(pddTimer);
+  document.getElementById('pddScreen').classList.remove('active');
+}
+
+function startPDDTimer() {
+  if (pddTimer) clearInterval(pddTimer);
+  pddTimer = setInterval(() => {
+    pddTimeLeft--;
+    updatePDDTimer();
+    if (pddTimeLeft <= 0) {
+      clearInterval(pddTimer);
+      finishPDD();
+    }
+  }, 1000);
+}
+
+function updatePDDTimer() {
+  const m = Math.floor(pddTimeLeft / 60);
+  const s = pddTimeLeft % 60;
+  const el = document.getElementById('pddTimerEl');
+  if (el) {
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    el.className = 'pdd-timer' + (pddTimeLeft < 60 ? ' warn' : '');
+  }
+}
+
+function renderPDDQuestion() {
+  const q = pddQuestions[pddCurrent];
+  const pct = (pddCurrent / 20) * 100;
+  const body = document.getElementById('pddBody');
+  
+  let answersHTML = q.a.map((ans, i) => 
+    `<button class="pdd-answer" onclick="selectPDDAnswer(${i})" id="pddAns${i}">${ans}</button>`
+  ).join('');
+  
+  body.innerHTML = `
+    <div class="pdd-progress"><div class="pdd-progress-fill" style="width:${pct}%"></div></div>
+    <div id="pddTimerEl" class="pdd-timer">20:00</div>
+    <div class="pdd-q-num">Вопрос ${pddCurrent + 1} из 20</div>
+    ${q.img ? `<img src="${q.img}" style="width:100%;max-width:400px;border-radius:12px;margin-bottom:16px;display:block" onerror="this.style.display='none'">` : ''}
+    <div class="pdd-question">${q.q}</div>
+    <div class="pdd-answers">${answersHTML}</div>
+    <button class="pdd-next" id="pddNextBtn" onclick="nextPDDQuestion()">
+      ${pddCurrent < 19 ? 'Следующий вопрос →' : 'Завершить тест'}
+    </button>`;
+  updatePDDTimer();
+}
+
+function selectPDDAnswer(idx) {
+  if (pddAnswers[pddCurrent] >= 0) return; // already answered
+  pddAnswers[pddCurrent] = idx;
+  const q = pddQuestions[pddCurrent];
+  
+  // Show result
+  for (let i = 0; i < q.a.length; i++) {
+    const btn = document.getElementById('pddAns' + i);
+    if (i === q.c) btn.classList.add('correct');
+    else if (i === idx && idx !== q.c) btn.classList.add('wrong');
+    btn.disabled = true;
+  }
+  
+  document.getElementById('pddNextBtn').style.display = 'block';
+}
+
+function nextPDDQuestion() {
+  if (pddCurrent < 19) {
+    pddCurrent++;
+    renderPDDQuestion();
+    updatePDDTimer();
+  } else {
+    finishPDD();
+  }
+}
+
+async function finishPDD() {
+  if (pddTimer) clearInterval(pddTimer);
+  
+  const correct = pddAnswers.filter((a, i) => a === pddQuestions[i].c).length;
+  const passed = correct >= 18;
+  
+  // Save result
+  const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
+  const result = {correct, passed, date: new Date().toISOString(), week: pddWeekIdx};
+  try { localStorage.setItem(key, JSON.stringify(result)); } catch(e) {}
+  
+  // Auto-set checkbox if passed
+  if (passed) {
+    await autoSetPDDCheckbox(pddEmpIdx, pddWeekIdx);
+  }
+  
+  // Show result
+  const body = document.getElementById('pddBody');
+  body.innerHTML = `<div class="pdd-result">
+    <div class="pdd-result-icon">${passed ? '🏆' : '😔'}</div>
+    <div class="pdd-result-title">${passed ? 'Тест сдан!' : 'Тест не сдан'}</div>
+    <div class="pdd-result-score">${correct} из 20 правильных ответов</div>
+    <div class="pdd-result-badge ${passed ? 'pass' : 'fail'}">${passed ? '✅ Зачтено' : '❌ Не зачтено'}</div>
+    ${passed ? '<div style="color:var(--green);font-size:14px;font-weight:600">Чекбокс «Еженедельная сдача ПДД» проставлен автоматически ✓</div>' : 
+      '<div style="color:var(--muted);font-size:14px">Нужно 18 из 20. Следующая попытка на следующей неделе.</div>'}
+    <button class="pdd-next" style="display:block;margin-top:24px" onclick="closePDD();renderCabinet()">Закрыть</button>
+  </div>`;
+}
+
+async function autoSetPDDCheckbox(empIdx, weekIdx) {
+  // Find PDD criteria index (first item of first criteria = Еженедельная сдача ПДД)
+  const pddCritIdx = 0; // CRITERIA[0] = ПДД
+  const pddItemIdx = 0; // items[0] = Еженедельная сдача ПДД
+  
+  if (!state.data[curMonth]) return;
+  if (!state.data[curMonth][empIdx]) return;
+  if (!state.data[curMonth][empIdx][weekIdx]) state.data[curMonth][empIdx][weekIdx] = emptyWeek();
+  
+  const week = state.data[curMonth][empIdx][weekIdx];
+  if (!week[pddCritIdx]) week[pddCritIdx] = Array(CRITERIA[pddCritIdx].items.length).fill(false);
+  week[pddCritIdx][pddItemIdx] = true;
+  
+  await save();
+}
+
+
 // ===== TOAST =====
 function toast(msg){const c=document.getElementById('toastC');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},3000);}
 
@@ -2327,6 +2614,7 @@ async function saveEditEmp() {
         <div class="cab-name" id="cabName">—</div>
         <div class="cab-sub" id="cabSub">Мастер · Вектор</div>
       </div>
+      <button class="cab-logout" onclick="openPDD()" style="background:rgba(200,16,46,.7);margin-right:8px">🚦 Сдать ПДД</button>
       <button class="cab-logout" onclick="doLogout()">Выйти</button>
     </div>
   </div>
@@ -2340,5 +2628,17 @@ async function saveEditEmp() {
   </div>
 </div>
 
+
+<!-- PDD TEST SCREEN -->
+<div class="pdd-screen" id="pddScreen">
+  <div class="pdd-hdr">
+    <div>
+      <div class="pdd-hdr-title">🚦 Тест ПДД</div>
+      <div class="pdd-hdr-sub" id="pddHdrSub">20 вопросов · 20 минут</div>
+    </div>
+    <button class="pdd-close" onclick="closePDD()">✕ Закрыть</button>
+  </div>
+  <div class="pdd-body" id="pddBody"></div>
+</div>
 </body>
 </html>
