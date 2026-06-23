@@ -2292,7 +2292,7 @@ async function closePDD() {
     try { await firestore.collection('pdd_results').doc(key).set(result); } catch(e) {}
     toast('❌ Тест закрыт — засчитан как не сданный');
   }
-  pddQuestions = [];
+  // Don't clear pddQuestions - keep cached for next time
   document.getElementById('pddScreen').classList.remove('active');
 }
 
@@ -2380,9 +2380,11 @@ async function finishPDD() {
     await firestore.collection('pdd_results').doc(key).set(result);
   } catch(e) { console.warn('Firebase PDD save error:', e); }
   
-  // Auto-set checkbox if passed
+  // Auto-set or clear checkbox based on result
   if (passed) {
-    await autoSetPDDCheckbox(pddEmpIdx, pddWeekIdx);
+    await setPDDCheckbox(pddEmpIdx, pddWeekIdx, true);
+  } else {
+    await setPDDCheckbox(pddEmpIdx, pddWeekIdx, false);
   }
   
   // Show result
@@ -2398,10 +2400,9 @@ async function finishPDD() {
   </div>`;
 }
 
-async function autoSetPDDCheckbox(empIdx, weekIdx) {
-  // Find PDD criteria index (first item of first criteria = Еженедельная сдача ПДД)
-  const pddCritIdx = 0; // CRITERIA[0] = ПДД
-  const pddItemIdx = 0; // items[0] = Еженедельная сдача ПДД
+async function setPDDCheckbox(empIdx, weekIdx, value) {
+  const pddCritIdx = 0;
+  const pddItemIdx = 0;
   
   if (!state.data[curMonth]) return;
   if (!state.data[curMonth][empIdx]) return;
@@ -2409,7 +2410,7 @@ async function autoSetPDDCheckbox(empIdx, weekIdx) {
   
   const week = state.data[curMonth][empIdx][weekIdx];
   if (!week[pddCritIdx]) week[pddCritIdx] = Array(CRITERIA[pddCritIdx].items.length).fill(false);
-  week[pddCritIdx][pddItemIdx] = true;
+  week[pddCritIdx][pddItemIdx] = value;
   
   await save();
 }
@@ -2437,8 +2438,10 @@ async function resetPDDForEmp(empIdx) {
     if (key && key.startsWith(`pdd_${empIdx}_`)) keysToRemove.push(key);
   }
   keysToRemove.forEach(key => localStorage.removeItem(key));
-  toast(`✅ Тест ПДД сброшен — мастер может пройти заново`);
-  // Re-render to update checkboxes
+  // Clear PDD checkbox only for current week
+  const currentWeek = getCurrentWeekIdx();
+  await setPDDCheckbox(empIdx, currentWeek, false);
+  toast(`✅ Тест ПДД сброшен для недели ${currentWeek + 1} — мастер может пройти заново`);
   if (curEmp >= 0) renderMaster();
 }
 
@@ -2665,6 +2668,8 @@ let cabSelWeek = -1;
 async function showMasterCabinet(empIdx) {
   cabEmpIdx = empIdx;
   document.getElementById('masterCab').classList.add('active');
+  // Preload PDD questions in background
+  if (!pddQuestionsLoaded) loadPDDQuestions();
   // Load PDD results from Firebase to localStorage cache
   try {
     const snap = await firestore.collection('pdd_results')
