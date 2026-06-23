@@ -2381,6 +2381,7 @@ function nextPDDQuestion() {
 
 async function finishPDD() {
   if (pddTimer) clearInterval(pddTimer);
+  pddTimer = null; // Mark as finished so closePDD doesn't count as failed
   
   const correct = pddAnswers.filter((a, i) => a === pddQuestions[i].c).length;
   const passed = correct >= 18;
