@@ -1674,6 +1674,7 @@ function _updateMasterUI() {
           : `<div style="font-size:10px;font-weight:700;color:var(--red);margin-top:4px">❌ ПДД не сдан</div>`;
       }
     } catch(e) {}
+    // (badge shown in week card below)
     wg.innerHTML += `<div class="wnc ${sel}" onclick="selectWeek(${w})">
       <div class="wnt">Неделя ${w+1}</div>
       <div class="wnd">${dates[w]}</div>
@@ -1733,20 +1734,44 @@ function renderCriteria() {
     c.items.forEach((itemName, ii) => {
       const label = document.createElement('label');
       label.className = 'crit-item-label' + (checks[ii] ? ' checked' : '');
-      // PDD checkbox (ci=0, ii=0) - auto only, block manual editing
       const isPDDCheck = ci === 0 && ii === 0;
-      label.innerHTML = `
-        <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}">
-        <span class="cb-box"></span>
-        <span class="cb-text">${itemName}${isPDDCheck ? ' <span style="font-size:10px;color:var(--muted)">(авто)</span>' : ''}</span>
-        <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
-      `;
       if (isPDDCheck) {
-        // Block all clicks on PDD checkbox
+        // PDD checkbox - auto only, show status icon
+        const pddKey = getPDDWeekKey(curEmp, curWeek);
+        let pddResult = null;
+        try { pddResult = JSON.parse(localStorage.getItem(pddKey)); } catch(e) {}
+        
+        let pddIcon = '', pddStyle = '', pddClass = '';
+        if (pddResult === null) {
+          // No attempt yet - show empty
+          pddIcon = '<span style="display:inline-block;width:20px;height:20px;border:2px solid #d1d5db;border-radius:4px;vertical-align:middle;margin-right:8px"></span>';
+          pddStyle = 'opacity:0.6';
+        } else if (pddResult.passed) {
+          pddIcon = '<span style="display:inline-block;width:20px;height:20px;background:var(--green);border-radius:4px;vertical-align:middle;margin-right:8px;color:#fff;font-size:13px;text-align:center;line-height:20px">✓</span>';
+          pddClass = ' checked';
+        } else {
+          pddIcon = '<span style="display:inline-block;width:20px;height:20px;background:var(--red);border-radius:4px;vertical-align:middle;margin-right:8px;color:#fff;font-size:13px;text-align:center;line-height:20px">✗</span>';
+          pddStyle = 'background:var(--red-bg)';
+        }
+        
+        label.innerHTML = `
+          ${pddIcon}
+          <span class="cb-text" style="color:${pddResult && !pddResult.passed ? 'var(--red)' : ''}">
+            ${itemName} <span style="font-size:10px;color:var(--muted)">(авто)</span>
+          </span>
+          <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
+        `;
         label.style.pointerEvents = 'none';
-        label.style.opacity = '0.7';
         label.style.cursor = 'default';
+        if (pddStyle) label.style.cssText += ';' + pddStyle;
+        if (pddClass) label.className += pddClass;
       } else {
+        label.innerHTML = `
+          <input type="checkbox" class="crit-cb" ${checks[ii]?'checked':''} id="cb_${ci}_${ii}">
+          <span class="cb-box"></span>
+          <span class="cb-text">${itemName}</span>
+          <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
+        `;
         label.querySelector('input').addEventListener('change', (e) => {
           updateCritCheck(ci, ii, e.target.checked);
           label.className = 'crit-item-label' + (e.target.checked ? ' checked' : '');
@@ -2736,15 +2761,15 @@ function renderCabinet() {
     const wa = weekAvg(empIdx, w);
     const wCls = wa === null ? 'empty' : wa >= 90 ? 'green' : wa >= 70 ? 'yellow' : 'red';
     const pct = wa !== null ? Math.round(wa) : 0;
-    // Check PDD status from Firebase (async - we'll load separately)
     const pddKey = getPDDWeekKey(empIdx, w);
     let pddBadge = '';
     try {
       const stored = localStorage.getItem(pddKey);
       if (stored) {
         const r = JSON.parse(stored);
-        pddBadge = r.passed ? '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>' 
-                            : '<span style="font-size:11px;font-weight:700;color:var(--red)">❌ ПДД не сдан</span>';
+        pddBadge = r.passed 
+          ? '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>'
+          : '<span style="font-size:11px;font-weight:700;color:var(--red)">❌ ПДД не сдан</span>';
       }
     } catch(e) {}
     html += `<div class="cab-week-card ${wCls}" onclick="cabShowWeek(${w})">
