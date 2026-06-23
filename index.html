@@ -1941,27 +1941,44 @@ let pddQuestionsLoaded = false;
 
 async function loadPDDQuestions() {
   if (pddQuestionsLoaded && PDD_QUESTIONS.length > 0) return true;
+  const BASE = 'https://o1dbro.github.io/zdorovaya_kletka/';
+  const IMG_BASE = BASE + 'images/A_B/';
   try {
-    const url = 'https://o1dbro.github.io/zdorovaya_kletka/questions/A_B.json';
-    const resp = await fetch(url);
-    const data = await resp.json();
-    // Convert format: {question, answers:[{answer_text, is_correct}]} → {q, a, c}
-    const BASE_URL = 'https://o1dbro.github.io/zdorovaya_kletka/';
-    PDD_QUESTIONS = data
+    // Load all 40 tickets
+    const tickets = Array.from({length:40}, (_, i) => i + 1);
+    const results = await Promise.allSettled(
+      tickets.map(n => 
+        fetch(BASE + `questions/A_B/tickets/Билет ${n}.json`).then(r => r.json())
+      )
+    );
+    let allQuestions = [];
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+        allQuestions = allQuestions.concat(r.value);
+      }
+    });
+    if (allQuestions.length === 0) throw new Error('No questions loaded');
+    PDD_QUESTIONS = allQuestions
       .filter(item => item.question && item.answers && item.answers.length >= 2)
       .map(item => ({
         q: item.question,
         a: item.answers.map(a => a.answer_text),
         c: item.answers.findIndex(a => a.is_correct),
-        img: item.image ? BASE_URL + item.image.replace('./', '') : null
+        img: item.image ? BASE + item.image.replace('./images/', 'images/') : null
       }))
       .filter(item => item.c >= 0);
+    // Remove duplicates by question text
+    const seen = new Set();
+    PDD_QUESTIONS = PDD_QUESTIONS.filter(q => {
+      if (seen.has(q.q)) return false;
+      seen.add(q.q);
+      return true;
+    });
     pddQuestionsLoaded = true;
     console.log('PDD questions loaded:', PDD_QUESTIONS.length);
     return true;
   } catch(e) {
-    console.warn('Failed to load PDD from CDN, using fallback:', e);
-    // Fallback to built-in questions
+    console.warn('Failed to load PDD, using fallback:', e);
     PDD_QUESTIONS = PDD_FALLBACK;
     pddQuestionsLoaded = true;
     return false;
