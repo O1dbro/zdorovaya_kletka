@@ -1205,12 +1205,10 @@ function calcMotiv(ei) {
       }
     }
 
-    let bonusPerL=0, deductPerL=0, normNote='', normType='neu';
+    let deductPerL=0, normNote='', normType='neu';
     const an = adjNormFinal; // shorthand
     if (sch==='52') {
-      const over = an + 30;
-      if (totalNormL >= over)        { bonusPerL=67; normNote=`Выкатка >${over} зан. → +67₽/зан. × ${totalNormL}${normCoefNote}`; normType='pos'; }
-      else if (totalNormL >= an)     { normNote=`Норма 5/2 выполнена (≥${an} зан.)${normCoefNote}`; normType='neu'; }
+      if (totalNormL >= an)          { normNote=`Норма 5/2 выполнена (≥${an} зан.)${normCoefNote}`; normType='neu'; }
       else if (totalNormL >= Math.round(an*0.79)) { deductPerL=27;  normNote=`<${an} зан. при 5/2 → −27₽/зан. × ${totalNormL}${normCoefNote}`;  normType='neg'; }
       else if (totalNormL >= Math.round(an*0.58)) { deductPerL=67;  normNote=`<${Math.round(an*0.79)} зан. при 5/2 → −67₽/зан. × ${totalNormL}${normCoefNote}`;  normType='neg'; }
       else if (totalNormL >= Math.round(an*0.37)) { deductPerL=134; normNote=`<${Math.round(an*0.58)} зан. при 5/2 → −134₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
@@ -1222,8 +1220,21 @@ function calcMotiv(ei) {
       else if (totalNormL >= Math.round(an*0.31)) { deductPerL=134; normNote=`≤${Math.round(an*0.56)} зан. при 2/2 → −134₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
       else                                        { deductPerL=200; normNote=`≤${Math.round(an*0.31)} зан. при 2/2 → −200₽/зан. × ${totalNormL}${normCoefNote}`; normType='neg'; }
     }
-    const delta = (bonusPerL - deductPerL) * totalNormL;
-    rows.push({label:'Депремирование (норма занятий)', val: delta, type: normType, note: normNote});
+    // Выкатка — отдельный бонус только при >150 занятий (стандартная норма без ручной корректировки)
+    const stdNorm = sch === '52' ? 120 : 98;
+    if (totalNormL >= 150 && _customNorm === 0) {
+      const vykatkaBonus = 67 * totalNormL;
+      rows.push({label:'Выкатка (>150 зан.)', val: vykatkaBonus, type:'pos',
+        note:`+67₽/зан. × ${totalNormL} зан.`});
+      total += vykatkaBonus;
+    }
+    const delta = -deductPerL * totalNormL;
+    if (delta < 0) {
+      rows.push({label:'Депремирование (норма занятий)', val: delta, type: normType, note: normNote});
+      total += delta;
+    } else if (normType === 'neu' && normNote) {
+      rows.push({label:'Норма занятий', val: 0, type:'neu', note: normNote});
+    }
     total += delta;
   }
 
