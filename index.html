@@ -1111,7 +1111,7 @@ function calcMotiv(ei) {
 
   // Базовые занятия (без поручений и нон-стопа)
   const baseL = mainL + gosL + vngL; // для нормы KPI
-  const allMainL = mainL + gosL + vngL + extraL + porL; // для стажа/KPI/экзам.
+  const allMainL = mainL + gosL + vngL + extraL + porL + nonStop; // для стажа/KPI/экзам.
   const allBaseL = mainL + gosL + vngL + extraL; // для здоровой клетки и стажа (без поручений и без нон-стопа)
 
   const rows = [];
