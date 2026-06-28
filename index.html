@@ -1598,6 +1598,7 @@ async function saveKPI() {
   document.getElementById('masterScheduleLabel').textContent = 'График '+(k.schedule==='22'?'2/2':'5/2');
   await save();
   updateMasterUI();
+  updateKPIStatusDisplay();
 }
 
 function updateMasterUI() {
@@ -2492,7 +2493,8 @@ function updateKPIStatusDisplay() {
   const vngL = Math.floor((parseFloat(k.vngHours)||0) / 3 * 10) / 10;
   const extraL = Math.floor((parseFloat(k.extraHours)||0) / 2 * 10) / 10;
   const porL = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
-  const totalL = mainL + gosL + vngL + extraL + porL;
+  const nonStopL = parseInt(k.nonStop) || 0;
+  const totalL = mainL + gosL + vngL + extraL + porL + nonStopL;
   const normOk = totalL >= adjNorm && totalL > 0;
   const reviewsOk = reviews >= 5;
   const allOk = normOk && reviewsOk && pddDone > 0;
