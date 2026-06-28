@@ -51,6 +51,15 @@
   .sc-label{font-size:11px;color:var(--hint);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
   .sc-val{font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em;}
   .sc-val.green{color:var(--green);} .sc-val.yellow{color:var(--yellow);} .sc-val.red{color:var(--red);}
+  .sc-clickable{cursor:pointer;position:relative;transition:box-shadow .15s;}
+  .sc-clickable:hover{box-shadow:0 2px 12px rgba(0,0,0,.08);}
+  .sc-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:220px;background:#fff;border:0.5px solid var(--border-light);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;overflow:hidden;}
+  .sc-clickable.open .sc-dropdown{display:block;}
+  .sc-dropdown-item{padding:10px 14px;font-size:13px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border-light);}
+  .sc-dropdown-item:last-child{border-bottom:none;}
+  .sc-dropdown-item:hover{background:var(--bg);}
+  .sc-dropdown-item .sdi-pct{font-size:12px;font-weight:600;}
+  .sc-dropdown-item .sdi-pct.green{color:var(--green);} .sc-dropdown-item .sdi-pct.yellow{color:var(--yellow);} .sc-dropdown-item .sdi-pct.red{color:var(--red);}
 
   .sec-title{font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
 
@@ -1156,10 +1165,10 @@ function calcMotiv(ei) {
   // Здесь используем allMainL и adjNorm которые объявлены выше
   const normOkForKPI = allMainL >= adjNorm && allMainL > 0; // adjNorm = pre-hire-date value
   const kpiOk = normOkForKPI && reviewsOk && pddDone > 0;
-  if (kpiOk && allMainL > 0) {
-    const kpiBonus = 67 * allMainL;
+  if (kpiOk && allBaseL > 0) {
+    const kpiBonus = 67 * allBaseL;
     rows.push({label:'KPI выполнен', val:kpiBonus, type:'pos',
-      note:`+67₽/зан. × ${allMainL.toFixed(1)} зан. (норма ✓, отзывы ✓, ПДД ✓)`});
+      note:`+67₽/зан. × ${allBaseL.toFixed(1)} зан. (норма ✓, отзывы ✓, ПДД ✓)`});
     total += kpiBonus;
   } else {
     const missing = [];
@@ -1228,9 +1237,9 @@ function calcMotiv(ei) {
     // Выкатка — отдельный бонус только при >150 занятий (стандартная норма без ручной корректировки)
     const stdNorm = sch === '52' ? 120 : 98;
     if (totalNormL >= 150 && _customNorm === 0) {
-      const vykatkaBonus = 67 * totalNormL;
+      const vykatkaBonus = 67 * allBaseL;
       rows.push({label:'Выкатка (>150 зан.)', val: vykatkaBonus, type:'pos',
-        note:`+67₽/зан. × ${totalNormL} зан.`});
+        note:`+67₽/зан. × ${allBaseL.toFixed(allBaseL%1===0?0:1)} зан.`});
       total += vykatkaBonus;
     }
     const delta = -deductPerL * totalNormL;
@@ -1283,11 +1292,11 @@ function calcMotiv(ei) {
   }
 
   // 7. Стаж — +67₽/+134₽ × все занятия (кроме нон-стопа)
-  if (stage > 0 && allMainL > 0) {
+  if (stage > 0 && allBaseL > 0) {
     const stagePerL = stage === 1 ? 67 : 134;
-    const stageBonus = stagePerL * allMainL;
+    const stageBonus = stagePerL * allBaseL;
     rows.push({label:'Надбавка за стаж', val:stageBonus, type:'pos',
-      note:`${stage===1?'+67₽':'+134₽'}/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+      note:`${stage===1?'+67₽':'+134₽'}/зан. × ${allBaseL.toFixed(allBaseL%1===0?0:1)} зан.`});
     total += stageBonus;
   }
 
@@ -1299,16 +1308,16 @@ function calcMotiv(ei) {
   }
 
   // 9. Командный KPI — +67₽ × все занятия (кроме нон-стопа)
-  if (teamKpi > 0 && allMainL > 0) {
-    const tkBonus = 67 * allMainL;
-    rows.push({label:'Командный KPI старшего', val:tkBonus, type:'pos', note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+  if (teamKpi > 0 && allBaseL > 0) {
+    const tkBonus = 67 * allBaseL;
+    rows.push({label:'Командный KPI старшего', val:tkBonus, type:'pos', note:`+67₽/зан. × ${allBaseL.toFixed(allBaseL%1===0?0:1)} зан.`});
     total += tkBonus;
   }
 
   // 10. Экзаменаторство — +67₽ × все занятия (кроме нон-стопа)
-  if (examiner > 0 && allMainL > 0) {
-    const exBonus = 67 * allMainL;
-    rows.push({label:'Экзаменаторство', val:exBonus, type:'pos', note:`+67₽/зан. × ${allMainL.toFixed(allMainL%1===0?0:1)} зан.`});
+  if (examiner > 0 && allBaseL > 0) {
+    const exBonus = 67 * allBaseL;
+    rows.push({label:'Экзаменаторство', val:exBonus, type:'pos', note:`+67₽/зан. × ${allBaseL.toFixed(allBaseL%1===0?0:1)} зан.`});
     total += exBonus;
   }
 
@@ -1336,17 +1345,28 @@ function renderDash() {
 
   // Общая статистика
   let teamSum=0, teamCnt=0, totalGreens=0, totalYellows=0, totalReds=0;
+  const greenEmps=[], yellowEmps=[], redEmps=[];
   for (let ei=0; ei<state.employees.length; ei++) {
     const a = monthAvg(ei);
-    if (a!==null){teamSum+=a;teamCnt++;const cc=clr(a);if(cc==='green')totalGreens++;else if(cc==='yellow')totalYellows++;else totalReds++;}
+    if (a!==null){teamSum+=a;teamCnt++;const cc=clr(a);if(cc==='green'){totalGreens++;greenEmps.push({ei,a});}else if(cc==='yellow'){totalYellows++;yellowEmps.push({ei,a});}else{totalReds++;redEmps.push({ei,a});}}
   }
   const ta = teamCnt>0 ? teamSum/teamCnt : null;
+  const mkDropdown = (list, cls) => list.length === 0 ? '' :
+    '<div class="sc-dropdown">' +
+    list.map(({ei,a}) => {
+      const prof = (state.profiles&&state.profiles[ei])||{};
+      const branch = prof.branch ? ' · '+prof.branch : '';
+      return `<div class="sc-dropdown-item" onclick="event.stopPropagation();openEmpFromDash(${ei})">
+        <span>${state.employees[ei]}${branch}</span>
+        <span class="sdi-pct ${cls}">${a.toFixed(1)}%</span>
+      </div>`;
+    }).join('') + '</div>';
   document.getElementById('statsBar').innerHTML = `
     <div class="sc"><div class="sc-label">Средний % по всем</div><div class="sc-val ${clr(ta)}">${fmt(ta)}</div></div>
     <div class="sc"><div class="sc-label">Всего мастеров</div><div class="sc-val" style="color:#1a1d2e">${state.employees.length}</div></div>
-    <div class="sc"><div class="sc-label">🟩 Богатый мастер</div><div class="sc-val green">${totalGreens}</div></div>
-    <div class="sc"><div class="sc-label">🟨 Близко (70–89%)</div><div class="sc-val yellow">${totalYellows}</div></div>
-    <div class="sc"><div class="sc-label">🟥 Нужна работа</div><div class="sc-val red">${totalReds}</div></div>`;
+    <div class="sc sc-clickable" onclick="toggleScDropdown(this, event)"><div class="sc-label">🟩 Богатый мастер</div><div class="sc-val green">${totalGreens}</div>${mkDropdown(greenEmps,'green')}</div>
+    <div class="sc sc-clickable" onclick="toggleScDropdown(this, event)"><div class="sc-label">🟨 Близко (70–89%)</div><div class="sc-val yellow">${totalYellows}</div>${mkDropdown(yellowEmps,'yellow')}</div>
+    <div class="sc sc-clickable" onclick="toggleScDropdown(this, event)"><div class="sc-label">🟥 Нужна работа</div><div class="sc-val red">${totalReds}</div>${mkDropdown(redEmps,'red')}</div>`;
 
   // Карточки филиалов
   const bg = document.getElementById('branchGrid');
@@ -1389,6 +1409,27 @@ function renderDash() {
       <span class="branch-open">Открыть филиал →</span>
     </div>`;
   }
+}
+
+function toggleScDropdown(el, event) {
+  event.stopPropagation();
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.sc-clickable.open').forEach(e => e.classList.remove('open'));
+  if (!isOpen) el.classList.add('open');
+}
+window.addEventListener('click', function(e) {
+  if (!e.target.closest('.sc-clickable')) {
+    document.querySelectorAll('.sc-clickable.open').forEach(e => e.classList.remove('open'));
+  }
+});
+
+function openEmpFromDash(ei) {
+  // Find branch of employee and open branch view, then open employee
+  const prof = (state.profiles && state.profiles[ei]) || {};
+  const branchId = prof.branch || '';
+  openBranch(branchId);
+  // Wait for branch to render, then open employee
+  setTimeout(() => openMaster(ei), 50);
 }
 
 function openBranch(branchId) {
