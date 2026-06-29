@@ -1113,10 +1113,14 @@ async function load() {
 }
 
 let _realtimeUnsubscribe = null;
+let _skipFirstSnapshot = true; // первый snapshot = дубль load(), пропускаем
 function startRealtimeSync() {
   if (_realtimeUnsubscribe) return; // уже подписаны
+  _skipFirstSnapshot = true; // следующий snapshot будет первым — пропускаем
   _realtimeUnsubscribe = STATE_DOC.onSnapshot(snap => {
     if (!snap.exists) return;
+    // Первый snapshot срабатывает сразу и дублирует load() — пропускаем
+    if (_skipFirstSnapshot) { _skipFirstSnapshot = false; return; }
     try {
       const fresh = JSON.parse(snap.data().data);
       // Обновляем state не трогая curMonth/curEmp/curWeek
@@ -1128,7 +1132,7 @@ function startRealtimeSync() {
       curMonth = savedMonth || state.months[0];
       curEmp = savedEmp;
       curWeek = savedWeek;
-      // Перерисовываем если открыт admin-вид мастера
+      // Перерисовываем если открыт admin-вид
       if (currentRole === 'admin' || currentRole === 'director' || currentRole === 'hr' || currentRole === 'senior') {
         if (document.getElementById('viewMaster').classList.contains('active') && curEmp >= 0 && curEmp < state.employees.length) {
           renderMaster();
@@ -3031,7 +3035,10 @@ async function showMasterCabinet(empIdx) {
 
   const sel = document.getElementById('cabMonthSel');
   sel.innerHTML = state.months.map(m => `<option value="${m}">${m}</option>`).join('');
-  sel.value = curMonth;
+  // Всегда открываем последний месяц (актуальный)
+  const lastMonth = state.months[state.months.length - 1];
+  sel.value = lastMonth;
+  curMonth = lastMonth;
   sel.dataset.empIdx = empIdx;
   renderCabinet();
 }
