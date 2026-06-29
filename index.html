@@ -450,6 +450,7 @@
     <button class="btn btn-ghost" style="font-size:12px;opacity:.7" onclick="if(confirm('Сбросить ВСЕ данные? Мастера и оценки будут удалены.'))resetAllData()">Сброс</button>
     <button class="btn btn-ghost" onclick="showKnowledge()">База знаний</button>
     <button class="btn btn-ghost" onclick="showFAQ()">FAQ</button>
+    <button class="btn btn-ghost" onclick="showContacts()">Контакты</button>
     <button class="btn btn-ghost" onclick="openAddMonthModal()">Новый месяц</button>
     <button class="btn btn-ghost" onclick="importJSON()" title="Загрузить данные из файла резервной копии">Импорт</button>
     <button class="btn btn-ghost" onclick="exportJSON()" title="Сохранить все данные в файл резервной копии">Бэкап</button>
@@ -463,6 +464,7 @@
 <div class="hdr-dropdown" id="hdrDropdown">
   <button class="btn btn-ghost" onclick="closeMobileMenu();showKnowledge()">База знаний</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();showFAQ()">FAQ</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();showContacts()">Контакты</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();openAddMonthModal()">Новый месяц</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();importJSON()">Импорт</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();exportJSON()">Бэкап</button>
@@ -865,6 +867,81 @@
       <h2 style="font-size:22px;font-weight:800;color:var(--text);margin:24px 0 6px">FAQ</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Ответы на частые вопросы по системе «Здоровая клетка»</p>
       <div id="faq-root"></div>
+    </div>
+  </div>
+
+  <div id="viewContacts" class="view">
+    <span class="back-btn" onclick="showDash()">← Назад</span>
+    <div style="max-width:800px;margin:0 auto;padding:0 16px 40px">
+      <h2 style="font-size:22px;font-weight:800;color:var(--text);margin:24px 0 6px">Контакты</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Адреса и телефоны филиалов автошколы «Вектор»</p>
+      <div style="display:grid;gap:12px;">
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--red);">
+          <div style="font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Головной офис</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">ул. Яна Фабрициуса, 56</div>
+          <a href="tel:+79284542977" style="font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.55 5.55l1.47-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            8 (928) 454-29-77
+          </a>
+        </div>
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Сочи</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">ул. Роз, 117</div>
+          <div style="font-size:12px;color:var(--hint);margin-bottom:6px">203 офис</div>
+          <a href="tel:+79284499477" style="font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.55 5.55l1.47-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            8 (928) 449-94-77
+          </a>
+        </div>
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Дагомыс</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">ул. Гайдара, 2/1</div>
+          <div style="font-size:12px;color:var(--hint);margin-bottom:6px">Второй этаж</div>
+          <a href="tel:+79284589877" style="font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.55 5.55l1.47-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            8 (928) 458-98-77
+          </a>
+        </div>
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Адлер</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">ул. Кирова, 23</div>
+          <div style="font-size:12px;color:var(--hint);margin-bottom:6px">2 этаж, офис 6</div>
+          <a href="tel:+79284583577" style="font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.55 5.55l1.47-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            8 (928) 458-35-77
+          </a>
+        </div>
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Филиал</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">ул. Урожайная, 84</div>
+          <div style="font-size:12px;color:var(--hint);margin-bottom:6px">2 этаж</div>
+          <a href="tel:+79284458182" style="font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.55 5.55l1.47-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            8 (928) 445-81-82
+          </a>
+        </div>
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Филиал · Моремолл</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">ул. Новая Заря, 7</div>
+          <div style="font-size:12px;color:var(--hint);margin-bottom:6px">ТРЦ Моремолл, 2 этаж</div>
+          <a href="tel:+79284469367" style="font-size:14px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.55 5.55l1.47-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            8 (928) 446-93-67
+          </a>
+        </div>
+
+        <div style="background:#fff;border-radius:var(--r);padding:20px 22px;border:0.5px solid var(--border-light);border-left:3px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Филиал</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px">ул. Гастелло, 5</div>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -1594,6 +1671,7 @@ function openMaster(ei) {
   document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewKnowledge').classList.remove('active');
   document.getElementById('viewFAQ').classList.remove('active');
+  document.getElementById('viewContacts').classList.remove('active');
   document.getElementById('viewMaster').classList.add('active');
   renderMaster();
 }
@@ -1603,6 +1681,7 @@ function showDash() {
   document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewKnowledge').classList.remove('active');
   document.getElementById('viewFAQ').classList.remove('active');
+  document.getElementById('viewContacts').classList.remove('active');
   document.getElementById('viewDash').classList.add('active');
   renderDash();
 }
@@ -1611,6 +1690,7 @@ function showBranch() {
   document.getElementById('viewDash').classList.remove('active');
   document.getElementById('viewKnowledge').classList.remove('active');
   document.getElementById('viewFAQ').classList.remove('active');
+  document.getElementById('viewContacts').classList.remove('active');
   document.getElementById('viewBranch').classList.add('active');
   renderBranch();
 }
@@ -3647,6 +3727,11 @@ function showFAQ() {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('viewFAQ').classList.add('active');
   renderFAQ();
+}
+
+function showContacts() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('viewContacts').classList.add('active');
 }
 
 function renderFAQ() {
