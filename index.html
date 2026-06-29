@@ -445,6 +445,7 @@
   <div class="hdr-nav">
     <button class="btn btn-ghost" style="font-size:12px;opacity:.7" onclick="if(confirm('Сбросить ВСЕ данные? Мастера и оценки будут удалены.'))resetAllData()">Сброс</button>
     <button class="btn btn-ghost" onclick="showKnowledge()">База знаний</button>
+    <button class="btn btn-ghost" onclick="showFAQ()">FAQ</button>
     <button class="btn btn-ghost" onclick="openAddMonthModal()">Новый месяц</button>
     <button class="btn btn-ghost" onclick="importJSON()" title="Загрузить данные из файла резервной копии">Импорт</button>
     <button class="btn btn-ghost" onclick="exportJSON()" title="Сохранить все данные в файл резервной копии">Бэкап</button>
@@ -457,6 +458,7 @@
 <!-- MOBILE DROPDOWN -->
 <div class="hdr-dropdown" id="hdrDropdown">
   <button class="btn btn-ghost" onclick="closeMobileMenu();showKnowledge()">База знаний</button>
+  <button class="btn btn-ghost" onclick="closeMobileMenu();showFAQ()">FAQ</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();openAddMonthModal()">Новый месяц</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();importJSON()">Импорт</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();exportJSON()">Бэкап</button>
@@ -850,6 +852,15 @@
 
       <!-- Аккордеон -->
       <div id="kb-root"></div>
+    </div>
+  </div>
+
+  <div id="viewFAQ" class="view">
+    <span class="back-btn" onclick="showDash()">← Назад</span>
+    <div style="max-width:800px;margin:0 auto;padding:0 16px 40px">
+      <h2 style="font-size:22px;font-weight:800;color:var(--text);margin:24px 0 6px">FAQ</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Ответы на частые вопросы по системе «Здоровая клетка»</p>
+      <div id="faq-root"></div>
     </div>
   </div>
 
@@ -1578,6 +1589,7 @@ function openMaster(ei) {
   document.getElementById('viewDash').classList.remove('active');
   document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewKnowledge').classList.remove('active');
+  document.getElementById('viewFAQ').classList.remove('active');
   document.getElementById('viewMaster').classList.add('active');
   renderMaster();
 }
@@ -1586,6 +1598,7 @@ function showDash() {
   document.getElementById('viewMaster').classList.remove('active');
   document.getElementById('viewBranch').classList.remove('active');
   document.getElementById('viewKnowledge').classList.remove('active');
+  document.getElementById('viewFAQ').classList.remove('active');
   document.getElementById('viewDash').classList.add('active');
   renderDash();
 }
@@ -1593,6 +1606,7 @@ function showBranch() {
   document.getElementById('viewMaster').classList.remove('active');
   document.getElementById('viewDash').classList.remove('active');
   document.getElementById('viewKnowledge').classList.remove('active');
+  document.getElementById('viewFAQ').classList.remove('active');
   document.getElementById('viewBranch').classList.add('active');
   renderBranch();
 }
@@ -3505,9 +3519,144 @@ function renderKnowledge() {
   `).join('');
 }
 
-function toggleKB(id) {
-  const body = document.getElementById('kb-body-'+id);
-  const arrow = document.getElementById('kb-arrow-'+id);
+
+// ===== FAQ =====
+const FAQ_DATA = [
+  {
+    section: 'Вход и аккаунт',
+    items: [
+      {
+        q: 'Как войти в систему?',
+        a: 'Введите логин (например: <code>ivanov</code>) и пароль. Если вы впервые входите — используйте временный пароль, который вам выдал администратор. После первого входа аккаунт будет активирован.'
+      },
+      {
+        q: 'Забыл пароль. Что делать?',
+        a: 'Обратитесь к администратору (HR или руководителю). Он установит вам новый временный пароль в карточке мастера.'
+      },
+      {
+        q: 'Что вижу я как мастер?',
+        a: 'Только свой личный кабинет: статистику KPI по неделям, расчёт мотивации за выбранный месяц и чекбоксы KPI (только для просмотра). Сдать тест ПДД можно кнопкой «Сдать ПДД» в шапке кабинета.'
+      },
+    ]
+  },
+  {
+    section: 'KPI и чекбоксы',
+    items: [
+      {
+        q: 'Кто выставляет оценки по KPI?',
+        a: 'Чекбоксы выставляет HR, администратор или старший МПОВ вашего филиала. Мастер видит оценки, но не может их менять самостоятельно.'
+      },
+      {
+        q: 'Сколько блоков в KPI и как они называются?',
+        a: 'Всего 8 блоков: Знание ПДД, Брендбук, Маркетинг, Эффект присутствия, Нормативные документы, Жизнь в Векторе, NPS, Забота об автомобиле. Итоговый процент — среднее по всем блокам за неделю.'
+      },
+      {
+        q: 'Что значит зелёный / жёлтый / красный цвет карточки?',
+        a: '<span style="color:var(--green);font-weight:600">Зелёный</span> — KPI ≥ 90%. <span style="color:var(--yellow);font-weight:600">Жёлтый</span> — от 70% до 89%. <span style="color:var(--red);font-weight:600">Красный</span> — ниже 70%. Серый — данных нет.'
+      },
+      {
+        q: 'Почему ПДД нельзя отметить вручную?',
+        a: 'Отметка о сдаче ПДД проставляется автоматически только после прохождения теста прямо в системе. Это защита от ошибок и махинаций.'
+      },
+    ]
+  },
+  {
+    section: 'Мотивация и расчёт зарплаты',
+    items: [
+      {
+        q: 'Как считается надбавка +67 ₽/занятие за KPI?',
+        a: 'Надбавка начисляется при одновременном выполнении трёх условий: норма занятий (≥120 при 5/2 или ≥98 при 2/2), сдача теста ПДД раз в месяц, 5 отзывов на площадках. База — только основные занятия (осн. + ГОС + ВнГ + доп.), поручения и нон-стоп в базу не входят.'
+      },
+      {
+        q: 'Что такое поручения и нон-стоп? Влияют ли на KPI-надбавку?',
+        a: 'Поручения и нон-стоп считаются в общей норме (и в депремировании), но не входят в базу для надбавок +67 ₽. То есть они помогают выполнить норму, но не увеличивают сумму надбавки.'
+      },
+      {
+        q: 'Что такое депремирование?',
+        a: 'Если число занятий за месяц ниже нормы — ставка снижается (−27, −67, −134 или −200 ₽/зан. в зависимости от графика и количества занятий). Депремирование работает только в минус — превышение нормы не даёт плюс к ставке через этот механизм.'
+      },
+      {
+        q: 'Как считается стаж?',
+        a: 'Стаж определяется автоматически по дате приёма: меньше 1 года — без надбавки, 1 год — +67 ₽/зан., 2+ года — +134 ₽/зан.'
+      },
+    ]
+  },
+  {
+    section: 'Работа с системой',
+    items: [
+      {
+        q: 'Как посмотреть мотивацию за другой месяц?',
+        a: 'В личном кабинете есть переключатель месяца в верхней части экрана. Выберите нужный месяц — расчёт обновится автоматически.'
+      },
+      {
+        q: 'Можно ли поставить фото профиля?',
+        a: 'Да. В личном кабинете нажмите на круглый аватар с вашими инициалами — откроется выбор фото. Фото хранится локально в браузере.'
+      },
+      {
+        q: 'Данные сохраняются на сервере или только в браузере?',
+        a: 'Все данные KPI и мотивации хранятся централизованно в Firebase — они доступны с любого устройства. Фото профиля хранится локально в браузере на вашем устройстве.'
+      },
+      {
+        q: 'Почему я вижу «—» вместо процента KPI?',
+        a: 'Это значит, что за данную неделю оценки ещё не выставлены. Обратитесь к вашему HR или старшему МПОВ.'
+      },
+    ]
+  },
+  {
+    section: 'Тест ПДД',
+    items: [
+      {
+        q: 'Как сдать тест ПДД?',
+        a: 'Нажмите кнопку «Сдать ПДД» в шапке личного кабинета. Тест состоит из 20 вопросов, время — 20 минут. Нужно ответить правильно на все вопросы без ошибок.'
+      },
+      {
+        q: 'Как часто нужно сдавать тест ПДД?',
+        a: 'В системе «Здоровая клетка» тест нужно сдавать <strong>раз в неделю</strong> — результат отражается в еженедельных чекбоксах KPI. Для получения KPI-надбавки (+67 ₽/зан.) важно, чтобы ПДД было сдано за расчётный месяц.'
+      },
+      {
+        q: 'Что будет, если не сдать тест ПДД?',
+        a: 'KPI-надбавка (+67 ₽/зан.) за этот месяц не будет начислена, даже если выполнена норма занятий и получены отзывы.'
+      },
+    ]
+  },
+];
+
+function showFAQ() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('viewFAQ').classList.add('active');
+  renderFAQ();
+}
+
+function renderFAQ() {
+  const root = document.getElementById('faq-root');
+  if (root.dataset.rendered) return;
+  root.dataset.rendered = '1';
+
+  root.innerHTML = FAQ_DATA.map((sec, si) => `
+    <div style="margin-bottom:24px">
+      <div class="sec-title" style="margin-bottom:10px">${sec.section}</div>
+      ${sec.items.map((item, ii) => {
+        const id = 'faq-' + si + '-' + ii;
+        return `
+        <div class="kb-section" style="margin-bottom:8px">
+          <div class="kb-section-hdr" onclick="toggleFAQ('${id}')">
+            <div class="kb-section-hdr-left">
+              <span class="kb-section-title" style="font-size:13px;font-weight:600">${item.q}</span>
+            </div>
+            <span class="kb-section-arrow" id="faq-arrow-${id}">▼</span>
+          </div>
+          <div class="kb-section-body" id="faq-body-${id}">
+            <p style="font-size:13px;color:var(--text);line-height:1.7;margin-top:12px">${item.a}</p>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+function toggleFAQ(id) {
+  const body = document.getElementById('faq-body-' + id);
+  const arrow = document.getElementById('faq-arrow-' + id);
   const isOpen = body.classList.contains('open');
   body.classList.toggle('open', !isOpen);
   arrow.classList.toggle('open', !isOpen);
