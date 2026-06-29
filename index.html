@@ -1770,8 +1770,11 @@ function showBranch() {
 async function renderMaster() {
   const _ei = curEmp; // фиксируем до первого await
   _masterRendering = true;
-  await loadPDDResultsForAdmin(_ei);
-  _masterRendering = false;
+  try {
+    await loadPDDResultsForAdmin(_ei);
+  } finally {
+    _masterRendering = false; // сбрасываем даже если ошибка
+  }
   if (curEmp !== _ei) return; // пока грузили — пользователь открыл другого
   const name = state.employees[curEmp];
   const k = getKPI();
