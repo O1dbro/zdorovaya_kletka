@@ -1634,7 +1634,7 @@ function renderBranch() {
     const posLabel = prof.position === 'senior' ? '⭐ Старший МПОВ' : prof.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : 'МПОВ';
     const hireDateLabel = prof.hireDate ? '' + new Date(prof.hireDate).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
     let pills = '';
-    for (let w=0; w<4; w++) {
+    for (let w=0; w<WEEKS; w++) {
       const wa=weekAvg(ei,w); const wc=clr(wa);
       pills += `<div class="wp ${wc}"><div class="wl">Нед ${w+1}</div><div class="wv">${wa!==null?wa.toFixed(0)+'%':'—'}</div></div>`;
     }
@@ -1654,7 +1654,7 @@ function renderBranch() {
         </div>
       </div>
       <div class="prog-wrap" style="margin:8px 0 6px"><div class="prog-fill ${cls}" style="width:${pw}%"></div></div>
-      <div class="ec-weeks" style="gap:4px">${pills}</div>
+      <div class="ec-weeks">${pills}</div>
       ${hireDateLabel?`<div style="font-size:10px;color:var(--muted);margin-top:6px">${hireDateLabel}</div>`:''}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
         <span class="ec-money ${moneyClass}" style="font-size:11px">${k.rate>0?''+moneyLabel:'📝 Ставка не задана'}</span>
@@ -2110,13 +2110,21 @@ function getWeekDates(m) {
   const mi=months.findIndex(x=>x.toLowerCase()===(parts[0]||'').toLowerCase());
   const yr=parseInt(parts[1])||new Date().getFullYear();
   if(mi<0)return Array.from({length:WEEKS},(_,i)=>`Нед. ${i+1}`);
-  const first=new Date(yr,mi,1),last=new Date(yr,mi+1,0).getDate();
-  const dow=first.getDay()||7;
-  const starts=[];
-  if(dow>1)starts.push(1);
-  for(let d=1+(dow===1?0:8-dow);d<=last;d+=7)starts.push(d);
+  const last=new Date(yr,mi+1,0).getDate();
+  const first=new Date(yr,mi,1);
+  const dow=first.getDay()||7; // 1=Пн, 7=Вс
   const sm=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  return Array.from({length:WEEKS},(_,i)=>i<starts.length?`${starts[i]}–${Math.min(starts[i]+6,last)} ${sm[mi]}`:'—');
+  // Первая неделя — всегда с 1-го числа
+  const starts=[1];
+  // Следующий понедельник после 1-го числа
+  let nextMon=1+(dow===1?7:8-dow);
+  while(nextMon<=last){starts.push(nextMon);nextMon+=7;}
+  return Array.from({length:WEEKS},(_,i)=>{
+    if(i>=starts.length)return'—';
+    const s=starts[i];
+    const e=i+1<starts.length?starts[i+1]-1:last;
+    return`${s}–${e} ${sm[mi]}`;
+  });
 }
 
 // ===== MANAGE =====
