@@ -1114,6 +1114,7 @@ async function load() {
 
 let _realtimeUnsubscribe = null;
 let _skipFirstSnapshot = true; // первый snapshot = дубль load(), пропускаем
+let _masterRendering = false; // флаг что renderMaster сейчас выполняется
 function startRealtimeSync() {
   if (_realtimeUnsubscribe) return; // уже подписаны
   _skipFirstSnapshot = true; // следующий snapshot будет первым — пропускаем
@@ -1134,7 +1135,7 @@ function startRealtimeSync() {
       curWeek = savedWeek;
       // Перерисовываем если открыт admin-вид
       if (currentRole === 'admin' || currentRole === 'director' || currentRole === 'hr' || currentRole === 'senior') {
-        if (document.getElementById('viewMaster').classList.contains('active') && curEmp >= 0 && curEmp < state.employees.length) {
+        if (document.getElementById('viewMaster').classList.contains('active') && curEmp >= 0 && curEmp < state.employees.length && !_masterRendering) {
           renderMaster();
         } else if (document.getElementById('viewBranch').classList.contains('active')) {
           renderBranch();
@@ -1645,8 +1646,8 @@ function openEmpFromDash(ei) {
   const prof = (state.profiles && state.profiles[ei]) || {};
   const branchId = prof.branch || '';
   openBranch(branchId);
-  // Wait for branch to render, then open employee
-  setTimeout(() => openMaster(ei), 50);
+  // Сразу открываем мастера — renderBranch синхронный
+  openMaster(ei);
 }
 
 function openBranch(branchId) {
@@ -1767,7 +1768,11 @@ function showBranch() {
 }
 
 async function renderMaster() {
-  await loadPDDResultsForAdmin(curEmp);
+  const _ei = curEmp; // фиксируем до первого await
+  _masterRendering = true;
+  await loadPDDResultsForAdmin(_ei);
+  _masterRendering = false;
+  if (curEmp !== _ei) return; // пока грузили — пользователь открыл другого
   const name = state.employees[curEmp];
   const k = getKPI();
   document.getElementById('masterName').textContent = name;
