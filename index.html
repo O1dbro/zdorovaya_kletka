@@ -806,7 +806,6 @@
         <option value="senior">Старший МПОВ</option>
         <option value="examiner">МПОВ Экзаменатор</option>
         <option value="mpov">МПОВ</option>
-        <option value="primer">Мастер первоначального обучения</option>
       </select></div>
     <div class="modal-row"><label class="modal-label">Дата приёма на работу</label>
       <input class="inp" type="date" id="newEmpHireDate" style="width:100%"></div>
@@ -842,7 +841,6 @@
         <option value="senior">Старший МПОВ</option>
         <option value="examiner">МПОВ Экзаменатор</option>
         <option value="mpov">МПОВ</option>
-        <option value="primer">Мастер первоначального обучения</option>
       </select></div>
     <div class="modal-row" id="seniorBranchesRow" style="display:none"><label class="modal-label">Филиалы старшего</label>
       <div style="display:flex;flex-direction:column;gap:6px;padding:4px 0" id="seniorBranchesChecks">
@@ -1331,146 +1329,10 @@ function calcMotiv(ei) {
   const allMainL = mainL + gosL + vngL + extraL + porL + nonStop; // для стажа/KPI/экзам.
   const allBaseL = mainL + gosL + vngL + extraL; // для здоровой клетки и стажа (без поручений и без нон-стопа)
 
-  // ===== МАСТЕР ПЕРВОНАЧАЛЬНОГО ОБУЧЕНИЯ =====
-  if (_empProf.position === 'primer') {
-    const mainL_p  = Math.floor((parseFloat(k.mainHours)||0) / 3 * 10) / 10;
-    const porL_p   = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
-    const reviews_p = parseInt(k.reviews) || 0;
-    const reviewsPhoto_p = parseInt(k.reviewsPhoto) || 0;
-    const pddDone_p = parseInt(k.kpiDone) || 0;
-    const sch_p = k.schedule || '52';
-    const stage_p = parseInt(k.stage) || 0;
-    const referralInstructor_p = parseInt(k.referralInstructor) || 0;
-    const referralStudent_p = parseInt(k.referralStudent) || 0;
-    const manualBonus_p = parseInt(k.manualBonus) || 0;
+  const rows = [];
+  let total = 0;
 
-    const _fullNorm_p = sch_p === '52' ? 120 : 98;
-    const _customNorm_p = parseInt(k.customNorm) || 0;
-    const adjNorm_p = _customNorm_p > 0 ? _customNorm_p : _fullNorm_p;
-
-    // Норма с пропорцией по дате приёма
-    let adjNormFinal_p = adjNorm_p;
-    const hireDate_p = _empProf.hireDate;
-    if (hireDate_p && _customNorm_p === 0) {
-      const hire_p = new Date(hireDate_p);
-      const months_p = {'Январь':0,'Февраль':1,'Март':2,'Апрель':3,'Май':4,'Июнь':5,'Июль':6,'Август':7,'Сентябрь':8,'Октябрь':9,'Ноябрь':10,'Декабрь':11};
-      const parts_p = curMonth.split(' ');
-      const mIdx_p = months_p[parts_p[0]];
-      const yr_p = parseInt(parts_p[1]);
-      if (!isNaN(mIdx_p) && !isNaN(yr_p)) {
-        const monthStart_p = new Date(yr_p, mIdx_p, 1);
-        const monthEnd_p = new Date(yr_p, mIdx_p + 1, 0);
-        const daysInMonth_p = monthEnd_p.getDate();
-        if (hire_p >= monthStart_p && hire_p <= monthEnd_p) {
-          const daysWorked_p = daysInMonth_p - hire_p.getDate() + 1;
-          adjNormFinal_p = Math.round(_fullNorm_p * daysWorked_p / daysInMonth_p);
-        }
-      }
-    }
-
-    const totalL_p = mainL_p + porL_p;
-    const normOk_p = totalL_p >= adjNormFinal_p && totalL_p > 0;
-    const reviewsOk_p = reviews_p >= 5;
-    const kpiOk_p = normOk_p && reviewsOk_p && pddDone_p > 0;
-
-    const rows_p = [];
-    let total_p = 0;
-
-    // Базовая ставка 533₽ за основные занятия
-    const baseRate_p = 533;
-    if (mainL_p > 0) {
-      rows_p.push({label:'Основные занятия', val: baseRate_p * mainL_p, type:'pos',
-        note:`${baseRate_p}₽ × ${mainL_p.toFixed(mainL_p%1===0?0:1)} зан.`});
-      total_p += baseRate_p * mainL_p;
-    }
-
-    // Поручения 500₽/зан.
-    if (porL_p > 0) {
-      rows_p.push({label:'Поручения автошколы', val: 500 * porL_p, type:'pos',
-        note:`500₽/зан. × ${porL_p.toFixed(porL_p%1===0?0:1)} зан.`});
-      total_p += 500 * porL_p;
-    }
-
-    // KPI +67₽ за основные (не поручения)
-    if (kpiOk_p && mainL_p > 0) {
-      const kpiBonus_p = 67 * mainL_p;
-      rows_p.push({label:'KPI выполнен', val:kpiBonus_p, type:'pos',
-        note:`+67₽/зан. × ${mainL_p.toFixed(mainL_p%1===0?0:1)} зан. (норма ✓, отзывы ✓, ПДД ✓)`});
-      total_p += kpiBonus_p;
-    } else {
-      const missing_p = [];
-      if (!normOk_p) missing_p.push(`норма (${totalL_p.toFixed(1)}/${adjNormFinal_p})`);
-      if (!reviewsOk_p) missing_p.push(`отзывы (${reviews_p}/5)`);
-      if (!pddDone_p) missing_p.push('ПДД');
-      rows_p.push({label:'KPI', val:0, type:'neg', note:'Не выполнен: ' + missing_p.join(', ')});
-    }
-
-    // Здоровая клетка +67₽ по основным занятиям
-    const avg_p = monthAvg(ei);
-    const hcEarned_p = avg_p !== null && avg_p >= 90;
-    const hcBonus_p = hcEarned_p ? 67 * mainL_p : 0;
-    rows_p.push({
-      label:'Здоровая клетка',
-      val: hcBonus_p,
-      type: hcEarned_p ? 'pos' : 'neg',
-      note: hcEarned_p
-        ? `+67₽/зан. × ${mainL_p.toFixed(mainL_p%1===0?0:1)} зан. (ср. ${avg_p.toFixed(1)}% ≥ 90%)`
-        : avg_p===null ? 'Нет данных по неделям' : `Текущий % ${avg_p.toFixed(1)}% — нужно ≥90%`
-    });
-    if (hcEarned_p) total_p += hcBonus_p;
-
-    // Стаж по основным
-    if (stage_p > 0 && mainL_p > 0) {
-      const stagePerL_p = stage_p === 1 ? 67 : 134;
-      const stageBonus_p = stagePerL_p * mainL_p;
-      rows_p.push({label:'Надбавка за стаж', val:stageBonus_p, type:'pos',
-        note:`${stage_p===1?'+67₽':'+134₽'}/зан. × ${mainL_p.toFixed(mainL_p%1===0?0:1)} зан.`});
-      total_p += stageBonus_p;
-    }
-
-    // Отзывы на площадках
-    if (reviews_p > 0 || reviewsPhoto_p > 0) {
-      let revBonus_p = 0, revNote_p = '';
-      const totalRev_p = Math.min(reviews_p, 30);
-      const photoRev_p = Math.min(reviewsPhoto_p, totalRev_p);
-      const blocks_p = Math.min(Math.floor(totalRev_p / 10), 3);
-      if (blocks_p === 0) {
-        revNote_p = `${totalRev_p} отзывов — нужно минимум 10 для бонуса`;
-      } else {
-        const firstBlockBonus_p = photoRev_p >= 10 ? 3000 : 2000;
-        const extraBlocks_p = blocks_p - 1;
-        revBonus_p = firstBlockBonus_p + extraBlocks_p * 2000;
-        const photoTag_p = photoRev_p >= 10 ? ' с фото' : '';
-        let noteparts_p = [`10 отзывов${photoTag_p} → +${firstBlockBonus_p.toLocaleString('ru')}₽`];
-        if (extraBlocks_p > 0) noteparts_p.push(`${extraBlocks_p}×10 доп. → +${(extraBlocks_p*2000).toLocaleString('ru')}₽`);
-        revNote_p = noteparts_p.join(' · ') + ` = +${revBonus_p.toLocaleString('ru')}₽`;
-      }
-      rows_p.push({label:'Отзывы на площадках', val:revBonus_p, type:revBonus_p>0?'pos':'neu', note:revNote_p});
-      total_p += revBonus_p;
-    }
-
-    // Реферальные бонусы
-    if (referralInstructor_p > 0) {
-      rows_p.push({label:'Приведи друга инструктора', val:referralInstructor_p*5000, type:'pos', note:`${referralInstructor_p} чел. × 5 000₽`});
-      total_p += referralInstructor_p * 5000;
-    }
-    if (referralStudent_p > 0) {
-      rows_p.push({label:'Приведи друга курсанта', val:referralStudent_p*1000, type:'pos', note:`${referralStudent_p} чел. × 1 000₽`});
-      total_p += referralStudent_p * 1000;
-    }
-
-    // Ручная премия (только admin)
-    if (manualBonus_p !== 0) {
-      const mbNote_p = k.manualBonusNote ? k.manualBonusNote : (manualBonus_p > 0 ? 'Ручная премия' : 'Ручное удержание');
-      rows_p.push({label: manualBonus_p > 0 ? 'Ручная премия' : 'Удержание', val:manualBonus_p, type:manualBonus_p>0?'pos':'neg', note:mbNote_p});
-      total_p += manualBonus_p;
-    }
-
-    return {rows: rows_p, total: total_p};
-  }
-  // ===== КОНЕЦ ВЕТКИ PRIMER =====
-
- (120 + ГОС + ВнГ) × базовая ставка
+  // 1. Основные занятия (120 + ГОС + ВнГ) × базовая ставка
   if (rate > 0 && (mainL + gosL + vngL) > 0) {
     const baseTotal = rate * (mainL + gosL + vngL);
     rows.push({label:'Основные занятия', val:baseTotal, type:'pos',
@@ -1828,7 +1690,7 @@ function renderBranch() {
   grid.style.display='grid';empty.style.display='none';
 
   // Сортировка: старший → экзаменатор → мпов
-  const posOrder = {senior:0, examiner:1, mpov:2, primer:3};
+  const posOrder = {senior:0, examiner:1, mpov:2};
   members.sort((a,b) => {
     const pa = (state.profiles&&state.profiles[a]) || {};
     const pb = (state.profiles&&state.profiles[b]) || {};
@@ -1842,7 +1704,7 @@ function renderBranch() {
     const cls = clr(avg);
     const {total} = calcMotiv(ei);
     const k = (state.kpi[curMonth]&&state.kpi[curMonth][ei]) ? state.kpi[curMonth][ei] : emptyKPI();
-    const posLabel = prof.position === 'senior' ? '⭐ Старший МПОВ' : prof.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : prof.position === 'primer' ? '🚗 Первоначальное обучение' : 'МПОВ';
+    const posLabel = prof.position === 'senior' ? '⭐ Старший МПОВ' : prof.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : 'МПОВ';
     const hireDateLabel = prof.hireDate ? '' + new Date(prof.hireDate).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
     let pills = '';
     for (let w=0; w<WEEKS; w++) {
@@ -1856,7 +1718,7 @@ function renderBranch() {
       <div class="ec-head">
         <div style="flex:1;min-width:0">
           <div class="ec-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
-          <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;background:${prof.position==='senior'?'#fef3c7':prof.position==='examiner'?'#ede9fe':prof.position==='primer'?'#e0f2fe':'#f3f4f6'};color:${prof.position==='senior'?'#d97706':prof.position==='examiner'?'#7c3aed':prof.position==='primer'?'#0369a1':'#6b7280'}">${posLabel}</span>
+          <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;background:${prof.position==='senior'?'#fef3c7':prof.position==='examiner'?'#ede9fe':'#f3f4f6'};color:${prof.position==='senior'?'#d97706':prof.position==='examiner'?'#7c3aed':'#6b7280'}">${posLabel}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
           <div class="ec-avg ${cls}" style="font-size:16px">${fmt(avg)}</div>
@@ -1922,7 +1784,7 @@ async function renderMaster() {
   document.getElementById('masterScheduleLabel').textContent = 'График ' + (k.schedule==='22'?'2/2':'5/2');
   // Должность, филиал, дата приёма
   const _p = (state.profiles && state.profiles[curEmp]) || {};
-  const _posLbl = _p.position === 'senior' ? '⭐ Старший МПОВ' : _p.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : _p.position === 'primer' ? '🚗 Первоначальное обучение' : 'МПОВ';
+  const _posLbl = _p.position === 'senior' ? '⭐ Старший МПОВ' : _p.position === 'examiner' ? '🎓 МПОВ Экзаменатор' : 'МПОВ';
   const _brLbl = _p.branch ? ' · ' + _p.branch : '';
   const _hdLbl = _p.hireDate ? ' · принят ' + new Date(_p.hireDate).toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'}) : '';
   document.getElementById('masterSubInfo').textContent = _posLbl + _brLbl + _hdLbl;
@@ -1971,20 +1833,6 @@ async function renderMaster() {
   document.getElementById('manualBonusNoteInput').value = k.manualBonusNote||'';
 
   updateMasterUI();
-  // Скрываем/показываем поля в зависимости от должности
-  _applyPrimerFormUI(_p.position === 'primer');
-}
-
-// Скрываем поля формы которые не нужны для primer (мастер первоначального обучения)
-function _applyPrimerFormUI(isPrimer) {
-  const hideForPrimer = ['gosHoursInput','vngHoursInput','extraHoursInput','nonStopInput',
-    'rateInput','seniorSelect','teamKpiSelect','examinerSelect','mentorSelect'];
-  for (const id of hideForPrimer) {
-    const el = document.getElementById(id);
-    if (!el) continue;
-    const row = el.closest('.kpi-row');
-    if (row) row.style.display = isPrimer ? 'none' : '';
-  }
 }
 
 function getKPI() {
@@ -2515,9 +2363,6 @@ const MASTER_ACCOUNTS = [
   {login:'minasyan',       pass:'Minasyan2026',       name:'Минасян Ваган Алексеевич'},
   {login:'chulkina',       pass:'Chulkina2026',       name:'Чулкина Татьяна Сергеевна'},
   {login:'davliev',        pass:'Davliev2026',        name:'Давлиев Алмаз Ильясович'},
-  {login:'zubin',          pass:'Zubin2026',           name:'Зубин Вадим Александрович'},
-  {login:'teslyuk',        pass:'Teslyuk2026',         name:'Теслюк Андрей Валерьянович'},
-  {login:'alles',          pass:'Alles2026',           name:'Аллес Глеб Витальевич'},
 ];
 
 // Auto-assign logins to profiles on load
@@ -3099,8 +2944,7 @@ function updateKPIStatusDisplay() {
   const extraL = Math.floor((parseFloat(k.extraHours)||0) / 2 * 10) / 10;
   const porL = Math.floor((parseFloat(k.porucheniyaHours)||0) / 3 * 10) / 10;
   const nonStopL = parseInt(k.nonStop) || 0;
-  const _primerPos = (state.profiles && state.profiles[curEmp] && state.profiles[curEmp].position === 'primer');
-  const totalL = _primerPos ? (mainL + porL) : (mainL + gosL + vngL + extraL + porL + nonStopL);
+  const totalL = mainL + gosL + vngL + extraL + porL + nonStopL;
   const normOk = totalL >= adjNorm && totalL > 0;
   const reviewsOk = reviews >= 5;
   const allOk = normOk && reviewsOk && pddDone > 0;
@@ -3376,7 +3220,7 @@ async function showMasterCabinet(empIdx) {
   } catch(e) { console.warn('PDD load error:', e); }
   const name = state.employees[empIdx] || 'Мастер';
   const prof = (state.profiles && state.profiles[empIdx]) || {};
-  const posLabel = prof.position === 'senior' ? 'Старший МПОВ' : prof.position === 'examiner' ? 'МПОВ Экзаменатор' : prof.position === 'primer' ? 'Мастер первоначального обучения' : 'МПОВ';
+  const posLabel = prof.position === 'senior' ? 'Старший МПОВ' : prof.position === 'examiner' ? 'МПОВ Экзаменатор' : 'МПОВ';
   document.getElementById('cabName').textContent = name;
   document.getElementById('cabSub').textContent = posLabel + ' · Вектор · ' + (prof.branch || '');
   // Initials
