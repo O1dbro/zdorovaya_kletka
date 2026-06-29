@@ -302,6 +302,11 @@
   body[data-role="senior"] [onclick*="openWeek"] { pointer-events:none!important; opacity:.5!important; cursor:default!important; }
   body[data-role="senior"] .weeks-grid .week-btn { pointer-events:none!important; cursor:default!important; }
 
+  /* Ручная премия — только для admin */
+  body[data-role="master"] .admin-only-field,
+  body[data-role="director"] .admin-only-field,
+  body[data-role="hr"] .admin-only-field,
+  body[data-role="senior"] .admin-only-field { display:none!important; }
   /* LOADING */
   .loading-screen{display:flex;position:fixed;inset:0;background:#1d1d1f;z-index:2000;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
   .loading-screen.hidden{display:none;}
@@ -726,6 +731,18 @@
           <div class="kpi-inp-wrap">
             <input class="kpi-inp" type="number" id="referralStudentInput" min="0" max="50" placeholder="0" oninput="saveKPI()">
             <span class="kpi-unit">чел.</span>
+          </div>
+        </div>
+
+        <!-- Ручная премия (только admin) -->
+        <div class="kpi-row admin-only-field" style="grid-column:1/-1;background:#fff8f0;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-top:4px">
+          <span class="kpi-label" style="font-weight:600;color:#b45309">Ручная премия <span style="font-size:10px;font-weight:400;color:var(--hint)">только Администратор</span></span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div class="kpi-inp-wrap">
+              <input class="kpi-inp" type="number" id="manualBonusInput" min="-999999" max="999999" placeholder="0" oninput="saveKPI()" style="width:100px">
+              <span class="kpi-unit">₽</span>
+            </div>
+            <input class="kpi-inp" type="text" id="manualBonusNoteInput" placeholder="Комментарий (необязательно)" oninput="saveKPI()" style="flex:1;min-width:140px;font-size:12px">
           </div>
         </div>
 
@@ -1165,7 +1182,7 @@ function emptyWeek() {
   return CRITERIA.map(c => Array(c.items.length).fill(false));
 }
 function emptyEmpData() { return Array.from({length:WEEKS}, () => emptyWeek()); }
-function emptyKPI() { return {schedule:'52', mainHours:0, gosHours:0, vngHours:0, extraHours:0, porucheniyaHours:0, nonStop:0, kpiDone:0, reviews:0, reviewsPhoto:0, rate:0, stage:0, senior:0, teamKpi:0, examiner:0, mentor:0, hireDate:'', branch:'Кирова', position:'mpov', customNorm:0, referralInstructor:0, referralStudent:0}; }
+function emptyKPI() { return {schedule:'52', mainHours:0, gosHours:0, vngHours:0, extraHours:0, porucheniyaHours:0, nonStop:0, kpiDone:0, reviews:0, reviewsPhoto:0, rate:0, stage:0, senior:0, teamKpi:0, examiner:0, mentor:0, hireDate:'', branch:'Кирова', position:'mpov', customNorm:0, referralInstructor:0, referralStudent:0, manualBonus:0, manualBonusNote:''}; }
 
 // ===== CALCULATIONS =====
 function weekAvg(ei, wi) {
@@ -1405,6 +1422,14 @@ function calcMotiv(ei) {
     rows.push({label:'Приведи друга курсанта', val:refStudBonus, type:'pos',
       note:`${referralStudent} чел. × 1 000₽`});
     total += refStudBonus;
+  }
+
+  // 5в. Ручная премия (только admin)
+  const manualBonus = parseInt(k.manualBonus) || 0;
+  if (manualBonus !== 0) {
+    const mbNote = k.manualBonusNote ? k.manualBonusNote : (manualBonus > 0 ? 'Ручная премия' : 'Ручное удержание');
+    rows.push({label: manualBonus > 0 ? 'Ручная премия' : 'Удержание', val: manualBonus, type: manualBonus > 0 ? 'pos' : 'neg', note: mbNote});
+    total += manualBonus;
   }
 
   // 6. Отзывы на площадках (2ГИС, Flamp, Яндекс, Дром, АвтоГАИ)
@@ -1749,6 +1774,8 @@ async function renderMaster() {
   document.getElementById('customNormInput').value = k.customNorm||'';
   document.getElementById('referralInstructorInput').value = k.referralInstructor||'';
   document.getElementById('referralStudentInput').value = k.referralStudent||'';
+  document.getElementById('manualBonusInput').value = k.manualBonus||'';
+  document.getElementById('manualBonusNoteInput').value = k.manualBonusNote||'';
 
   updateMasterUI();
 }
@@ -1791,6 +1818,10 @@ async function saveKPI() {
   k.customNorm = parseInt(document.getElementById('customNormInput').value)||0;
   k.referralInstructor = parseInt(document.getElementById('referralInstructorInput').value)||0;
   k.referralStudent = parseInt(document.getElementById('referralStudentInput').value)||0;
+  if (currentRole === 'admin') {
+    k.manualBonus = parseInt(document.getElementById('manualBonusInput').value)||0;
+    k.manualBonusNote = document.getElementById('manualBonusNoteInput').value.trim();
+  }
   document.getElementById('masterScheduleLabel').textContent = 'График '+(k.schedule==='22'?'2/2':'5/2');
   await save();
   updateMasterUI();
