@@ -2605,20 +2605,31 @@ async function openPDD() {
       if (now.getFullYear() === mYear && monthNames[now.getMonth()] === mName && todayDay >= wStart && todayDay <= wEnd) {
         candidates.push({month: m, weekIdx: wi});
       }
-      // Также: первая неделя следующего месяца может начинаться в текущем календарном месяце
-      // (напр. 1 июля = понедельник, неделя 1 июля начинается 1-го — но сегодня ещё 29-30 июня)
-      // Для этого проверяем: если месяц следующий за текущим реальным И неделя начинается с 1-го
+      // Граница месяцев: сегодня начало нового месяца, но неделя началась в предыдущем.
+      // Например: сегодня 1–6 июля, понедельник этой недели был в июне →
+      // предлагаем сдать и за июнь (последняя неделя июня).
+      // Условие: m — предыдущий месяц, wi — последняя реальная неделя, wEnd < 7
+      // и текущий день (уже следующий месяц) попадает в ту же физическую неделю.
       const realMi = now.getMonth();
       const realYear = now.getFullYear();
-      const nextMi = (realMi + 1) % 12;
-      const nextYear = realMi === 11 ? realYear + 1 : realYear;
-      if (mYear === nextYear && mName === monthNames[nextMi] && wi === 0) {
-        // Это первая неделя следующего месяца — проверяем что сегодня последние дни текущего месяца
-        // и первая неделя следующего уже началась (т.е. до ближайшего пн)
-        const lastDayOfCurMonth = new Date(realYear, realMi + 1, 0).getDate();
-        // Если до конца текущего месяца ≤ 6 дней — граница месяцев на этой неделе
-        if (lastDayOfCurMonth - todayDay <= 6) {
-          candidates.push({month: m, weekIdx: wi});
+      const prevMi = (realMi - 1 + 12) % 12;
+      const prevYear = realMi === 0 ? realYear - 1 : realYear;
+      if (mYear === prevYear && mName === monthNames[prevMi]) {
+        // Это предыдущий месяц — проверяем его последнюю неделю
+        const lastWeekIdx = dates.filter(d => d && d !== '—').length - 1;
+        if (wi === lastWeekIdx) {
+          // Последняя неделя предыдущего месяца заканчивается раньше конца месяца
+          // (т.е. неделя «перетекает» в текущий месяц) — wEnd = конец месяца,
+          // а физически неделя (пн-вс) продолжается в начале текущего.
+          // Находим понедельник этой недели: wStart — начало недели в пред. месяце.
+          // Физическая неделя идёт с wStart пред. месяца по wStart+6.
+          // Если сегодня ≤ (wStart + 6 - lastDayOfPrevMonth), мы ещё на этой неделе.
+          const lastDayOfPrevMonth = new Date(prevYear, prevMi + 1, 0).getDate();
+          const daysIntoCurrentMonth = lastDayOfPrevMonth - wStart + 1; // дней недели в пред. месяце
+          const weekEndsOnDay = 7 - daysIntoCurrentMonth; // последний день недели в тек. месяце (1-based)
+          if (now.getFullYear() === realYear && monthNames[realMi] === monthNames[realMi] && todayDay <= weekEndsOnDay) {
+            candidates.push({month: m, weekIdx: wi});
+          }
         }
       }
     }
