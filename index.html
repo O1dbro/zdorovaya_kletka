@@ -476,6 +476,7 @@
   <button class="btn btn-ghost" onclick="closeMobileMenu();openBulkCreateModal()">Создать аккаунты</button>
   <button class="btn btn-green" onclick="closeMobileMenu();exportCSV()">Экспорт Excel</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();if(confirm('Сбросить ВСЕ данные?'))resetAllData()">Сброс</button>
+  <button class="btn btn-ghost" id="seniorPddBtnMobile" style="display:none;background:rgba(200,16,46,.7);color:#fff;font-weight:600" onclick="closeMobileMenu();openSeniorPDD()">Сдать ПДД</button>
   <button class="btn btn-ghost" onclick="closeMobileMenu();doLogout()">Выйти</button>
 </div>
 
@@ -2988,6 +2989,7 @@ function applyRoleUI() {
 
   // Кнопка «Сдать ПДД» — только для senior (у master она в кабинете)
   let pddHdrBtn = document.getElementById('seniorPddBtn');
+  const pddMobileBtn = document.getElementById('seniorPddBtnMobile');
   if (isSeniorRole) {
     if (!pddHdrBtn) {
       pddHdrBtn = document.createElement('button');
@@ -3001,8 +3003,10 @@ function applyRoleUI() {
       if (logoutBtn) logoutBtn.parentNode.insertBefore(pddHdrBtn, logoutBtn);
       else document.querySelector('.hdr-nav').appendChild(pddHdrBtn);
     }
-  } else if (pddHdrBtn) {
-    pddHdrBtn.remove();
+    if (pddMobileBtn) pddMobileBtn.style.display = '';
+  } else {
+    if (pddHdrBtn) pddHdrBtn.remove();
+    if (pddMobileBtn) pddMobileBtn.style.display = 'none';
   }
 }
 
