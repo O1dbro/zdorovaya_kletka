@@ -286,6 +286,21 @@
   body[data-role="director"] .weeks-grid .week-btn { pointer-events:none!important; cursor:default!important; }
   body[data-role="director"] .crit-panel input,
   body[data-role="director"] .crit-panel label { pointer-events:none!important; cursor:default!important; }
+  /* СТАРШИЙ МПОВ — блокируем всё редактирование кроме чекбоксов KPI */
+  body[data-role="senior"] .emp-del-btn,
+  body[data-role="senior"] .btn-red,
+  body[data-role="senior"] .btn-green:not([onclick*="exportCSV"]),
+  body[data-role="senior"] [onclick*="openEditEmp"],
+  body[data-role="senior"] [onclick*="openAddEmpModal"],
+  body[data-role="senior"] [onclick*="deleteEmp"],
+  body[data-role="senior"] .add-row,
+  body[data-role="senior"] .kpi-inp,
+  body[data-role="senior"] .kpi-sel,
+  body[data-role="senior"] [onclick*="saveKPI"],
+  body[data-role="senior"] [onclick*="saveWeek"],
+  body[data-role="senior"] .week-cell,
+  body[data-role="senior"] [onclick*="openWeek"] { pointer-events:none!important; opacity:.5!important; cursor:default!important; }
+  body[data-role="senior"] .weeks-grid .week-btn { pointer-events:none!important; cursor:default!important; }
 
   /* LOADING */
   .loading-screen{display:flex;position:fixed;inset:0;background:#1d1d1f;z-index:2000;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
@@ -795,11 +810,20 @@
         <option value="Гастелло">Гастелло</option>
       </select></div>
     <div class="modal-row"><label class="modal-label">Должность</label>
-      <select class="inp" id="editEmpPosition" style="width:100%">
+      <select class="inp" id="editEmpPosition" style="width:100%" onchange="toggleSeniorBranchesField()">
         <option value="senior">Старший МПОВ</option>
         <option value="examiner">МПОВ Экзаменатор</option>
         <option value="mpov">МПОВ</option>
       </select></div>
+    <div class="modal-row" id="seniorBranchesRow" style="display:none"><label class="modal-label">Филиалы старшего</label>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:4px 0" id="seniorBranchesChecks">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" value="Кирова"> Кирова</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" value="Роз"> Роз</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" value="Урожайная"> Урожайная</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" value="Фабрициуса"> Фабрициуса</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" value="Гастелло"> Гастелло</label>
+      </div>
+    </div>
     <div class="modal-row"><label class="modal-label">Дата приёма на работу</label>
       <input class="inp" type="date" id="editEmpHireDate" style="width:100%"></div>
     <div style="border-top:1.5px solid var(--border);margin:14px 0;"></div>
@@ -919,11 +943,22 @@ const STATE_DOC = firestore.collection('app').doc('state');
 const ADMIN_EMAIL = 'o1dbro@icloud.com';
 const DIRECTOR_LOGIN = 'director'; // логин директора
 const HR_LOGIN = 'hr'; // логин HR
+
 let currentUser = null;
-let currentRole = null; // 'admin' | 'master' | 'director'
+let currentRole = null; // 'admin' | 'master' | 'director' | 'hr' | 'senior'
+let currentSeniorBranches = []; // филиалы текущего старшего МПОВ
+
 function isViewOnly() { return currentRole === 'director'; }
 function isHR() { return currentRole === 'hr'; }
+function isSenior() { return currentRole === 'senior'; }
 function canEditChecks() { return currentRole === 'admin' || currentRole === 'hr'; }
+
+// Может ли старший ставить чекбоксы конкретному мастеру (по индексу)
+function seniorCanCheckEmp(empIdx) {
+  if (!isSenior()) return false;
+  const prof = (state.profiles && state.profiles[empIdx]) || {};
+  return currentSeniorBranches.includes(prof.branch);
+}
 
 function initDB() { return Promise.resolve(); }
 
@@ -1377,7 +1412,12 @@ function renderDash() {
   const hasNoBranch = state.employees.some((_,ei) => !(state.profiles&&state.profiles[ei]&&state.profiles[ei].branch));
   if (hasNoBranch) allBranches.push({id:'', icon:'❓', label:'Без филиала'});
 
-  for (const br of allBranches) {
+  // Старший видит только свои филиалы
+  const visibleBranches = isSenior()
+    ? allBranches.filter(br => currentSeniorBranches.includes(br.id || br.label))
+    : allBranches;
+
+  for (const br of visibleBranches) {
     // Собираем мастеров этого филиала
     const members = [];
     for (let ei=0; ei<state.employees.length; ei++) {
@@ -1857,7 +1897,9 @@ function renderCriteria() {
 }
 
 function updateCritCheck(ci, ii, val) {
-  if (isViewOnly()) return; // HR can edit checks
+  if (isViewOnly()) return;
+  // Старший МПОВ может редактировать только чекбоксы мастеров своих филиалов
+  if (isSenior() && !seniorCanCheckEmp(curEmp)) return;
   const row = state.data[curMonth][curEmp][curWeek];
   if (!row[ci] || row[ci].length !== CRITERIA[ci].items.length)
     row[ci] = Array(CRITERIA[ci].items.length).fill(false);
@@ -2574,10 +2616,11 @@ function toast(msg){const c=document.getElementById('toastC');const t=document.c
 function applyRoleUI() {
   const isDirector = currentRole === 'director';
   const isHrRole = currentRole === 'hr';
-  const isRestricted = isDirector || isHrRole;
+  const isSeniorRole = currentRole === 'senior';
+  const isRestricted = isDirector || isHrRole || isSeniorRole;
   document.body.dataset.role = currentRole || 'admin';
 
-  // Скрываем кнопки редактирования для директора и HR
+  // Скрываем кнопки редактирования для директора, HR и старших
   const editBtns = [
     document.querySelector('button[onclick*="resetAllData"]'),
     document.querySelector('button[onclick*="openAddMonthModal"]'),
@@ -2594,7 +2637,10 @@ function applyRoleUI() {
     roleTag.style.cssText = 'font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8)';
     document.querySelector('.hdr-nav').prepend(roleTag);
   }
-  roleTag.textContent = isDirector ? '👁 Директор' : isHrRole ? '👥 HR' : '⚙️ Администратор';
+  if (isDirector) roleTag.textContent = '👁 Директор';
+  else if (isHrRole) roleTag.textContent = '👥 HR';
+  else if (isSeniorRole) roleTag.textContent = '⭐ Старший МПОВ';
+  else roleTag.textContent = '⚙️ Администратор';
 }
 
 async function doLogin() {
@@ -2692,16 +2738,31 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       applyRoleUI();
       renderDash();
     } else {
-      // МАСТЕР — ищем по email в профилях
-      currentRole = 'master';
-      document.querySelector('.hdr').style.display = 'none';
-      document.querySelector('.main').style.display = 'none';
+      // МАСТЕР или СТАРШИЙ МПОВ — ищем по email в профилях
       await initDB();
       await load();
       const empIdx = findEmpByEmail(user.email);
       if (empIdx >= 0) {
-        showMasterCabinet(empIdx);
+        const prof = (state.profiles && state.profiles[empIdx]) || {};
+        const login = user.email.replace('@vector-mpov.ru', '').toLowerCase();
+        // Если позиция Старший МПОВ и есть привязка филиалов — роль senior
+        const senBranches = Array.isArray(prof.seniorBranches) ? prof.seniorBranches : [];
+        if (prof.position === 'senior' && senBranches.length > 0) {
+          currentRole = 'senior';
+          currentSeniorBranches = senBranches;
+          document.querySelector('.hdr').style.display = '';
+          document.querySelector('.main').style.display = '';
+          document.getElementById('masterCab').classList.remove('active');
+          applyRoleUI();
+          renderDash();
+        } else {
+          currentRole = 'master';
+          document.querySelector('.hdr').style.display = 'none';
+          document.querySelector('.main').style.display = 'none';
+          showMasterCabinet(empIdx);
+        }
       } else {
+        currentRole = 'master';
         document.getElementById('loginScreen').classList.add('active');
         document.getElementById('loginErr').textContent = 'Мастер не найден в системе. Обратитесь к администратору.';
         await auth.signOut();
@@ -2932,8 +2993,18 @@ function openEditEmp(ei) {
   document.getElementById('editEmpHireDate').value = prof.hireDate || '';
   document.getElementById('editEmpLogin').value = prof.login || '';
   document.getElementById('editEmpPass').value = '';
+  // Чекбоксы филиалов старшего
+  const senBr = Array.isArray(prof.seniorBranches) ? prof.seniorBranches : [];
+  document.querySelectorAll('#seniorBranchesChecks input[type=checkbox]').forEach(cb => {
+    cb.checked = senBr.includes(cb.value);
+  });
+  toggleSeniorBranchesField();
   document.getElementById('editEmpModal').classList.add('open');
   setTimeout(()=>document.getElementById('editEmpName').focus(), 100);
+}
+function toggleSeniorBranchesField() {
+  const pos = document.getElementById('editEmpPosition').value;
+  document.getElementById('seniorBranchesRow').style.display = pos === 'senior' ? '' : 'none';
 }
 async function saveEditEmp() {
   const ei = editingEmpIdx;
@@ -2948,12 +3019,18 @@ async function saveEditEmp() {
   const pass = document.getElementById('editEmpPass').value;
   const oldProf = state.profiles[ei] || {};
 
+  const position = document.getElementById('editEmpPosition').value;
+  const seniorBranches = position === 'senior'
+    ? Array.from(document.querySelectorAll('#seniorBranchesChecks input[type=checkbox]'))
+        .filter(cb => cb.checked).map(cb => cb.value)
+    : [];
   state.profiles[ei] = {
     branch: document.getElementById('editEmpBranch').value,
-    position: document.getElementById('editEmpPosition').value,
+    position,
     hireDate: document.getElementById('editEmpHireDate').value,
     login: login || oldProf.login || '',
     uid: oldProf.uid || '',
+    seniorBranches,
   };
 
   if (login && pass && pass.length >= 6) {
