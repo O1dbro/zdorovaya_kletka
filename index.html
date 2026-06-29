@@ -286,7 +286,7 @@
   body[data-role="director"] .weeks-grid .week-btn { pointer-events:none!important; cursor:default!important; }
   body[data-role="director"] .crit-panel input,
   body[data-role="director"] .crit-panel label { pointer-events:none!important; cursor:default!important; }
-  /* СТАРШИЙ МПОВ — блокируем всё редактирование кроме чекбоксов KPI */
+  /* СТАРШИЙ МПОВ — блокируем всё редактирование кроме чекбоксов KPI и отзывов */
   body[data-role="senior"] .emp-del-btn,
   body[data-role="senior"] .btn-red,
   body[data-role="senior"] .btn-green:not([onclick*="exportCSV"]),
@@ -294,9 +294,8 @@
   body[data-role="senior"] [onclick*="openAddEmpModal"],
   body[data-role="senior"] [onclick*="deleteEmp"],
   body[data-role="senior"] .add-row,
-  body[data-role="senior"] .kpi-inp,
+  body[data-role="senior"] .kpi-inp:not(.reviews-inp),
   body[data-role="senior"] .kpi-sel,
-  body[data-role="senior"] [onclick*="saveKPI"],
   body[data-role="senior"] [onclick*="saveWeek"],
   body[data-role="senior"] .week-cell,
   body[data-role="senior"] [onclick*="openWeek"] { pointer-events:none!important; opacity:.5!important; cursor:default!important; }
@@ -638,14 +637,14 @@
         <div class="kpi-row">
           <span class="kpi-label">Отзывов за месяц</span>
           <div class="kpi-inp-wrap">
-            <input class="kpi-inp" type="number" id="reviewsInput" min="0" max="30" placeholder="0" oninput="saveKPI()">
+            <input class="kpi-inp reviews-inp" type="number" id="reviewsInput" min="0" max="30" placeholder="0" oninput="saveKPI()">
             <span class="kpi-unit">отз.</span>
           </div>
         </div>
         <div class="kpi-row">
           <span class="kpi-label">Отзывов с фото</span>
           <div class="kpi-inp-wrap">
-            <input class="kpi-inp" type="number" id="reviewsPhotoInput" min="0" max="30" placeholder="0" oninput="saveKPI()">
+            <input class="kpi-inp reviews-inp" type="number" id="reviewsPhotoInput" min="0" max="30" placeholder="0" oninput="saveKPI()">
             <span class="kpi-unit">шт.</span>
           </div>
         </div>
@@ -1844,6 +1843,18 @@ function getKPI() {
 
 async function saveKPI() {
   if (isViewOnly() || isHR()) return;
+
+  // Старший МПОВ — может редактировать только отзывы своих подчинённых и себя
+  if (isSenior()) {
+    if (!seniorCanCheckEmp(curEmp)) return;
+    const k = getKPI();
+    k.reviews = parseInt(document.getElementById('reviewsInput').value)||0;
+    k.reviewsPhoto = parseInt(document.getElementById('reviewsPhotoInput').value)||0;
+    await save();
+    updateMasterUI();
+    updateKPIStatusDisplay();
+    return;
+  }
   const k = getKPI();
   k.schedule = document.getElementById('scheduleSelect').value;
   k.mainHours = parseFloat(document.getElementById('mainHoursInput').value)||0;
