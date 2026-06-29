@@ -1938,15 +1938,13 @@ function _updateMasterUI() {
   for (let w=0; w<WEEKS; w++) {
     const wa=weekAvg(curEmp,w); const wc=clr(wa);
     const sel = curWeek===w ? 'sel' : '';
-    // PDD status
+    // PDD статус — из state.data (Firebase), не из localStorage
     let pddTag = '';
     try {
-      const pddData = localStorage.getItem(getPDDWeekKey(curEmp, w));
-      if (pddData) {
-        const r = JSON.parse(pddData);
-        pddTag = r.passed 
-          ? `<div style="font-size:10px;font-weight:700;color:var(--green);margin-top:4px">✅ ПДД сдан</div>`
-          : ''; // не показываем "не сдан" — видно в чекбоксе
+      const weekRow = state.data[curMonth] && state.data[curMonth][curEmp] && state.data[curMonth][curEmp][w];
+      const pddPassed = weekRow && Array.isArray(weekRow[0]) && weekRow[0][0] === true;
+      if (pddPassed) {
+        pddTag = `<div style="font-size:10px;font-weight:700;color:var(--green);margin-top:4px">✅ ПДД сдан</div>`;
       }
     } catch(e) {}
     // (badge shown in week card below)
@@ -1983,18 +1981,8 @@ function renderCriteria() {
   const critWeight = 100 / CRITERIA.length;
 
   CRITERIA.forEach((c, ci) => {
+    // Для подсчёта процентов — берём только из state.data (источник правды)
     let checks = (row[ci] && row[ci].length === c.items.length) ? [...row[ci]] : Array(c.items.length).fill(false);
-    // For PDD section (ci=0), override first item based on actual PDD test result
-    if (ci === 0) {
-      const pddKey = getPDDWeekKey(curEmp, curWeek);
-      let pddResult = null;
-      try { pddResult = JSON.parse(localStorage.getItem(pddKey)); } catch(e) {}
-      if (pddResult === null) {
-        checks[0] = false; // No attempt - not passed
-      } else {
-        checks[0] = pddResult.passed === true;
-      }
-    }
     const itemWeight = critWeight / c.items.length;
     const earned = checks.filter(Boolean).length * itemWeight;
     const critPct = Math.round(earned * 10) / 10;
@@ -2022,36 +2010,40 @@ function renderCriteria() {
       label.className = 'crit-item-label' + (checks[ii] ? ' checked' : '');
       const isPDDCheck = ci === 0 && ii === 0;
       if (isPDDCheck) {
-        // PDD checkbox - auto only, show status icon
-        const pddKey = getPDDWeekKey(curEmp, curWeek);
-        let pddResult = null;
-        try { pddResult = JSON.parse(localStorage.getItem(pddKey)); } catch(e) {}
-        // Reset label class - don't use checks[ii] for PDD
-        label.className = 'crit-item-label';
+        // PDD чекбокс — источник правды: state.data (Firebase)
+        // localStorage используем только как дополнение если state пустой
+        const pddPassed = checks[0]; // из state.data — главный источник
         
-        let pddIcon = '', pddStyle = '', pddClass = '';
-        if (pddResult === null) {
-          // No attempt yet - show empty
-          pddIcon = '<span style="display:inline-block;width:20px;height:20px;border:2px solid #d1d5db;border-radius:4px;vertical-align:middle;margin-right:8px"></span>';
-          pddStyle = 'opacity:0.6';
-        } else if (pddResult.passed) {
+        let pddIcon = '', pddClass = '';
+        if (!pddPassed) {
+          // Не сдан или нет данных — пробуем localStorage как fallback
+          const pddKey = getPDDWeekKey(curEmp, curWeek);
+          let pddResult = null;
+          try { pddResult = JSON.parse(localStorage.getItem(pddKey)); } catch(e) {}
+          if (pddResult && pddResult.passed) {
+            // localStorage говорит сдан, но state ещё не обновился — показываем сдан
+            pddIcon = '<span style="display:inline-block;width:20px;height:20px;background:var(--green);border-radius:4px;vertical-align:middle;margin-right:8px;color:#fff;font-size:13px;text-align:center;line-height:20px">✓</span>';
+            pddClass = ' checked';
+          } else if (pddResult && !pddResult.passed) {
+            pddIcon = '<span style="display:inline-block;width:20px;height:20px;background:var(--red);border-radius:4px;vertical-align:middle;margin-right:8px;color:#fff;font-size:13px;text-align:center;line-height:20px">✗</span>';
+          } else {
+            pddIcon = '<span style="display:inline-block;width:20px;height:20px;border:2px solid #d1d5db;border-radius:4px;vertical-align:middle;margin-right:8px"></span>';
+          }
+        } else {
+          // state.data говорит сдан — показываем зелёный
           pddIcon = '<span style="display:inline-block;width:20px;height:20px;background:var(--green);border-radius:4px;vertical-align:middle;margin-right:8px;color:#fff;font-size:13px;text-align:center;line-height:20px">✓</span>';
           pddClass = ' checked';
-        } else {
-          pddIcon = '<span style="display:inline-block;width:20px;height:20px;background:var(--red);border-radius:4px;vertical-align:middle;margin-right:8px;color:#fff;font-size:13px;text-align:center;line-height:20px">✗</span>';
-          pddStyle = 'background:var(--red-bg)';
         }
-        
+
         label.innerHTML = `
           ${pddIcon}
-          <span class="cb-text" style="color:${pddResult && !pddResult.passed ? 'var(--red)' : ''}">
+          <span class="cb-text">
             ${itemName} <span style="font-size:10px;color:var(--muted)">(авто)</span>
           </span>
           <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
         `;
         label.style.pointerEvents = 'none';
         label.style.cursor = 'default';
-        if (pddStyle) label.style.background = pddResult && !pddResult.passed ? 'var(--red-bg)' : '';
         label.className = 'crit-item-label' + pddClass;
       } else {
         label.innerHTML = `
@@ -2183,7 +2175,9 @@ function getWeekDates(m) {
   return Array.from({length:WEEKS},(_,i)=>{
     if(i>=starts.length)return'—';
     const s=starts[i];
-    const e=i+1<starts.length?starts[i+1]-1:last;
+    // Последняя неделя в сетке всегда тянется до конца месяца
+    const isLast = (i===WEEKS-1)||(i+1>=starts.length);
+    const e=isLast?last:starts[i+1]-1;
     return`${s}–${e} ${sm[mi]}`;
   });
 }
@@ -2506,9 +2500,11 @@ let pddTimer = null;
 let pddTimeLeft = 0;
 let pddEmpIdx = -1;
 let pddWeekIdx = -1;
+let pddMonth = '';
 
 function getPDDWeekKey(empIdx, weekIdx) {
-  return `pdd_${empIdx}_${curMonth}_w${weekIdx}`;
+  const m = pddMonth || curMonth;
+  return `pdd_${empIdx}_${m}_w${weekIdx}`;
 }
 
 function getCurrentWeekIdx() {
@@ -2535,6 +2531,7 @@ function getCurrentWeekIdx() {
 
 async function openPDD() {
   pddEmpIdx = cabEmpIdx;
+  pddMonth = curMonth; // фиксируем месяц в момент открытия теста
   pddWeekIdx = getCurrentWeekIdx();
   const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
   
@@ -2703,12 +2700,13 @@ async function finishPDD() {
 async function setPDDCheckbox(empIdx, weekIdx, value) {
   const pddCritIdx = 0;
   const pddItemIdx = 0;
+  const month = pddMonth || curMonth; // используем зафиксированный месяц
   
-  if (!state.data[curMonth]) return;
-  if (!state.data[curMonth][empIdx]) return;
-  if (!state.data[curMonth][empIdx][weekIdx]) state.data[curMonth][empIdx][weekIdx] = emptyWeek();
+  if (!state.data[month]) return;
+  if (!state.data[month][empIdx]) return;
+  if (!state.data[month][empIdx][weekIdx]) state.data[month][empIdx][weekIdx] = emptyWeek();
   
-  const week = state.data[curMonth][empIdx][weekIdx];
+  const week = state.data[month][empIdx][weekIdx];
   if (!week[pddCritIdx]) week[pddCritIdx] = Array(CRITERIA[pddCritIdx].items.length).fill(false);
   week[pddCritIdx][pddItemIdx] = value;
   
@@ -3104,15 +3102,21 @@ function renderCabinet() {
     const wa = weekAvg(empIdx, w);
     const wCls = wa === null ? 'empty' : wa >= 90 ? 'green' : wa >= 70 ? 'yellow' : 'red';
     const pct = wa !== null ? Math.round(wa) : 0;
-    const pddKey = getPDDWeekKey(empIdx, w);
+    // ПДД статус — из state.data (Firebase), localStorage как fallback для мастера
     let pddBadge = '';
     try {
-      const stored = localStorage.getItem(pddKey);
-      if (stored) {
-        const r = JSON.parse(stored);
-        pddBadge = r.passed 
-          ? '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>'
-          : ''; // не показываем "не сдан" — видно в чекбоксе
+      const weekRow = state.data[month] && state.data[month][empIdx] && state.data[month][empIdx][w];
+      const pddPassedState = weekRow && Array.isArray(weekRow[0]) && weekRow[0][0] === true;
+      if (pddPassedState) {
+        pddBadge = '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>';
+      } else {
+        // Fallback: localStorage для мастера (его собственный браузер)
+        const pddKey = getPDDWeekKey(empIdx, w);
+        const stored = localStorage.getItem(pddKey);
+        if (stored) {
+          const r = JSON.parse(stored);
+          if (r.passed) pddBadge = '<span style="font-size:11px;font-weight:700;color:var(--green)">✅ ПДД сдан</span>';
+        }
       }
     } catch(e) {}
     html += `<div class="cab-week-card ${wCls}" onclick="cabShowWeek(${w})">
