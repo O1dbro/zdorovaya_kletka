@@ -3621,6 +3621,15 @@ function renderKnowledge() {
   `).join('');
 }
 
+function toggleKB(id) {
+  const body = document.getElementById('kb-body-' + id);
+  const arrow = document.getElementById('kb-arrow-' + id);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+}
+
 
 // ===== FAQ =====
 const FAQ_DATA = [
