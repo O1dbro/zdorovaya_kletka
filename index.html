@@ -1112,6 +1112,34 @@ async function load() {
   initializeState();
 }
 
+let _realtimeUnsubscribe = null;
+function startRealtimeSync() {
+  if (_realtimeUnsubscribe) return; // уже подписаны
+  _realtimeUnsubscribe = STATE_DOC.onSnapshot(snap => {
+    if (!snap.exists) return;
+    try {
+      const fresh = JSON.parse(snap.data().data);
+      // Обновляем state не трогая curMonth/curEmp/curWeek
+      const savedMonth = curMonth;
+      const savedEmp = curEmp;
+      const savedWeek = curWeek;
+      state = fresh;
+      initializeState();
+      curMonth = savedMonth || state.months[0];
+      curEmp = savedEmp;
+      curWeek = savedWeek;
+      // Перерисовываем если открыт admin-вид мастера
+      if (currentRole === 'admin' || currentRole === 'director' || currentRole === 'hr' || currentRole === 'senior') {
+        if (document.getElementById('viewMaster').classList.contains('active') && curEmp >= 0) {
+          renderMaster();
+        } else if (document.getElementById('viewBranch').classList.contains('active')) {
+          renderBranch();
+        }
+      }
+    } catch(e) { console.warn('Realtime sync error', e); }
+  }, err => { console.warn('onSnapshot error', err); });
+}
+
 function initializeState() {
   if (!state.months || !state.months.length) state.months = ['Июнь 2026'];
   if (!state.employees) state.employees = [];
@@ -2879,6 +2907,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       document.getElementById('masterCab').classList.remove('active');
       await initDB();
       await load();
+      startRealtimeSync();
       applyRoleUI();
       renderDash();
     } else if (user.email === DIRECTOR_LOGIN + '@vector-mpov.ru') {
@@ -2889,6 +2918,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       document.getElementById('masterCab').classList.remove('active');
       await initDB();
       await load();
+      startRealtimeSync();
       applyRoleUI();
       renderDash();
     } else if (user.email === HR_LOGIN + '@vector-mpov.ru') {
@@ -2899,6 +2929,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       document.getElementById('masterCab').classList.remove('active');
       await initDB();
       await load();
+      startRealtimeSync();
       applyRoleUI();
       renderDash();
     } else {
@@ -2917,6 +2948,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
           document.querySelector('.hdr').style.display = '';
           document.querySelector('.main').style.display = '';
           document.getElementById('masterCab').classList.remove('active');
+          startRealtimeSync();
           applyRoleUI();
           renderDash();
         } else {
