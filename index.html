@@ -1049,6 +1049,7 @@ let state = {
 let curMonth = '';
 let curEmp = -1;
 let curWeek = -1;
+let myEmpIdx = -1; // empIdx залогиненного senior/master (для ПДД)
 
 // ===== FIREBASE =====
 const firebaseConfig = {
@@ -2560,6 +2561,22 @@ function getCurrentWeekIdx() {
   return 4;
 }
 
+// Сдать ПДД для senior (у него нет кабинета — cabEmpIdx ставим из myEmpIdx)
+function openSeniorPDD() {
+  if (myEmpIdx < 0) { alert('Не удалось определить ваш аккаунт. Обновите страницу.'); return; }
+  cabEmpIdx = myEmpIdx;
+  openPDD();
+}
+
+// После закрытия ПДД — для master возвращаемся в кабинет, для senior — на дашборд
+function pddAfterClose() {
+  if (currentRole === 'senior') {
+    renderDash();
+  } else {
+    renderCabinet();
+  }
+}
+
 async function openPDD() {
   pddEmpIdx = cabEmpIdx;
 
@@ -2824,7 +2841,7 @@ async function finishPDD() {
     <div class="pdd-result-badge ${passed ? 'pass' : 'fail'}">${passed ? '✅ Зачтено' : '❌ Не зачтено'}</div>
     ${passed ? '<div style="color:var(--green);font-size:14px;font-weight:600">Чекбокс «Еженедельная сдача ПДД» проставлен автоматически ✓</div>' : 
       '<div style="color:var(--muted);font-size:14px">Нужно 18 из 20. Следующая попытка на следующей неделе.</div>'}
-    <button class="pdd-next" style="display:block;margin-top:24px" onclick="closePDD();renderCabinet()">Закрыть</button>
+    <button class="pdd-next" style="display:block;margin-top:24px" onclick="closePDD();pddAfterClose()">Закрыть</button>
   </div>`;
 }
 
@@ -2968,6 +2985,25 @@ function applyRoleUI() {
   else if (isHrRole) roleTag.textContent = '👥 HR';
   else if (isSeniorRole) roleTag.textContent = '⭐ Старший МПОВ';
   else roleTag.textContent = '⚙️ Администратор';
+
+  // Кнопка «Сдать ПДД» — только для senior (у master она в кабинете)
+  let pddHdrBtn = document.getElementById('seniorPddBtn');
+  if (isSeniorRole) {
+    if (!pddHdrBtn) {
+      pddHdrBtn = document.createElement('button');
+      pddHdrBtn.id = 'seniorPddBtn';
+      pddHdrBtn.className = 'btn btn-ghost btn-sm';
+      pddHdrBtn.style.cssText = 'background:rgba(200,16,46,.55);color:#fff;font-weight:600';
+      pddHdrBtn.textContent = 'Сдать ПДД';
+      pddHdrBtn.onclick = openSeniorPDD;
+      // Вставить перед кнопкой «Выйти»
+      const logoutBtn = document.querySelector('button[onclick*="doLogout"]');
+      if (logoutBtn) logoutBtn.parentNode.insertBefore(pddHdrBtn, logoutBtn);
+      else document.querySelector('.hdr-nav').appendChild(pddHdrBtn);
+    }
+  } else if (pddHdrBtn) {
+    pddHdrBtn.remove();
+  }
 }
 
 function toggleLoginPass(btn) {
@@ -3090,6 +3126,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         if (prof.position === 'senior' && senBranches.length > 0) {
           currentRole = 'senior';
           currentSeniorBranches = senBranches;
+          myEmpIdx = empIdx;
           document.querySelector('.hdr').style.display = '';
           document.querySelector('.main').style.display = '';
           document.getElementById('masterCab').classList.remove('active');
@@ -3098,6 +3135,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
           renderDash();
         } else {
           currentRole = 'master';
+          myEmpIdx = empIdx;
           document.querySelector('.hdr').style.display = 'none';
           document.querySelector('.main').style.display = 'none';
           showMasterCabinet(empIdx);
