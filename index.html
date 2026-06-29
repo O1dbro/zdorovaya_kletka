@@ -1129,7 +1129,7 @@ function startRealtimeSync() {
       const savedWeek = curWeek;
       state = fresh;
       initializeState();
-      curMonth = savedMonth || state.months[0];
+      curMonth = savedMonth || getCurrentMonth();
       curEmp = savedEmp;
       curWeek = savedWeek;
       // Перерисовываем если открыт admin-вид
@@ -1144,6 +1144,18 @@ function startRealtimeSync() {
       }
     } catch(e) { console.warn('Realtime sync error', e); }
   }, err => { console.warn('onSnapshot error', err); });
+}
+
+function getCurrentMonth() {
+  // Определяем текущий месяц по системной дате из доступных месяцев
+  const now = new Date();
+  const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const curName = months[now.getMonth()] + ' ' + now.getFullYear();
+  // Ищем точное совпадение
+  if (state.months && state.months.includes(curName)) return curName;
+  // Если нет — берём последний (ближайший к текущей дате)
+  if (state.months && state.months.length) return state.months[state.months.length - 1];
+  return curName;
 }
 
 function initializeState() {
@@ -1165,7 +1177,7 @@ function initializeState() {
   while (state.profiles.length > state.employees.length) state.profiles.pop();
   
   for (const m of state.months) ensureMonth(m);
-  curMonth = state.months[0];
+  curMonth = getCurrentMonth(); // открываем месяц соответствующий текущей дате
 }
 
 function ensureMonth(m) {
@@ -2039,15 +2051,22 @@ function renderCriteria() {
           pddClass = ' checked';
         }
 
+        // Для admin — добавляем кнопку ручной установки
+        const adminToggle = currentRole === 'admin'
+          ? `<button onclick="adminTogglePDD(${!pddPassed})" style="margin-left:auto;padding:2px 8px;font-size:10px;font-weight:600;border:none;border-radius:4px;cursor:pointer;background:${pddPassed?'#fee2e2':'#dcfce7'};color:${pddPassed?'var(--red)':'var(--green)'}">
+              ${pddPassed ? 'Снять' : 'Поставить'}
+            </button>`
+          : '';
         label.innerHTML = `
           ${pddIcon}
           <span class="cb-text">
             ${itemName} <span style="font-size:10px;color:var(--muted)">(авто)</span>
           </span>
           <span class="cb-weight">+${itemWeight.toFixed(1)}%</span>
+          ${adminToggle}
         `;
-        label.style.pointerEvents = 'none';
-        label.style.cursor = 'default';
+        label.style.pointerEvents = currentRole === 'admin' ? 'auto' : 'none';
+        label.style.cursor = currentRole === 'admin' ? 'default' : 'default';
         label.className = 'crit-item-label' + pddClass;
       } else {
         label.innerHTML = `
@@ -2535,8 +2554,92 @@ function getCurrentWeekIdx() {
 
 async function openPDD() {
   pddEmpIdx = cabEmpIdx;
-  pddMonth = curMonth; // фиксируем месяц в момент открытия теста
-  pddWeekIdx = getCurrentWeekIdx();
+
+  // Автоматически определяем правильный месяц и неделю по текущей дате
+  // Может быть ситуация когда на текущей неделе пересекаются два месяца
+  const now = new Date();
+  const todayDay = now.getDate();
+  const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const realMonthName = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+
+  // Находим все месяцы в которых текущая дата попадает в какую-то неделю
+  const candidates = []; // [{month, weekIdx}]
+  for (const m of state.months) {
+    const dates = getWeekDates(m);
+    for (let wi = 0; wi < dates.length; wi++) {
+      if (!dates[wi] || dates[wi] === '—') continue;
+      const match = dates[wi].match(/^(\d+)[–-](\d+)/);
+      if (!match) continue;
+      const wStart = parseInt(match[1]);
+      const wEnd = parseInt(match[2]);
+      // Проверяем: текущий месяц совпадает с месяцем строки И день попадает в диапазон
+      const mParts = m.split(' ');
+      const mName = mParts[0];
+      const mYear = parseInt(mParts[1]);
+      if (now.getFullYear() === mYear && monthNames[now.getMonth()] === mName && todayDay >= wStart && todayDay <= wEnd) {
+        candidates.push({month: m, weekIdx: wi});
+      }
+      // Также: первая неделя следующего месяца может начинаться в текущем календарном месяце
+      // (напр. 1 июля = понедельник, неделя 1 июля начинается 1-го — но сегодня ещё 29-30 июня)
+      // Для этого проверяем: если месяц следующий за текущим реальным И неделя начинается с 1-го
+      const realMi = now.getMonth();
+      const realYear = now.getFullYear();
+      const nextMi = (realMi + 1) % 12;
+      const nextYear = realMi === 11 ? realYear + 1 : realYear;
+      if (mYear === nextYear && mName === monthNames[nextMi] && wi === 0) {
+        // Это первая неделя следующего месяца — проверяем что сегодня последние дни текущего месяца
+        // и первая неделя следующего уже началась (т.е. до ближайшего пн)
+        const lastDayOfCurMonth = new Date(realYear, realMi + 1, 0).getDate();
+        // Если до конца текущего месяца ≤ 6 дней — граница месяцев на этой неделе
+        if (lastDayOfCurMonth - todayDay <= 6) {
+          candidates.push({month: m, weekIdx: wi});
+        }
+      }
+    }
+  }
+
+  // Убираем дубли и те где ПДД уже сдан
+  const pending = [];
+  for (const c of candidates) {
+    const weekRow = state.data[c.month] && state.data[c.month][pddEmpIdx] && state.data[c.month][pddEmpIdx][c.weekIdx];
+    const alreadyDone = weekRow && Array.isArray(weekRow[0]) && weekRow[0][0] === true;
+    // Также проверяем Firebase/localStorage
+    const key = `pdd_${pddEmpIdx}_${c.month}_w${c.weekIdx}`;
+    let attempt = null;
+    try { const snap = await firestore.collection('pdd_results').doc(key).get(); if (snap.exists) attempt = snap.data(); } catch(e) {}
+    if (!attempt) try { attempt = JSON.parse(localStorage.getItem(key)); } catch(e2) {}
+    if (!alreadyDone && !attempt) pending.push(c);
+  }
+
+  // Если несколько несданных — показываем выбор
+  if (pending.length === 0 && candidates.length > 0) {
+    // Все сданы — показываем результат первого
+    const c = candidates[0];
+    pddMonth = c.month; pddWeekIdx = c.weekIdx;
+  } else if (pending.length === 1) {
+    // Один несданный — сразу открываем
+    pddMonth = pending[0].month; pddWeekIdx = pending[0].weekIdx;
+  } else if (pending.length > 1) {
+    // Несколько несданных — предлагаем выбор (граница месяцев)
+    const body = document.getElementById('pddBody');
+    document.getElementById('pddScreen').classList.add('active');
+    body.innerHTML = `<div class="pdd-locked" style="text-align:center;padding:40px 20px">
+      <div style="font-size:36px;margin-bottom:12px">📅</div>
+      <div class="pdd-locked-title" style="margin-bottom:8px">На этой неделе — граница месяцев</div>
+      <div class="pdd-locked-sub" style="margin-bottom:24px">Нужно сдать ПДД за каждый месяц отдельно</div>
+      <div style="display:flex;flex-direction:column;gap:10px;max-width:280px;margin:0 auto">
+        ${pending.map((c,i) => `<button onclick="startPDDFor('${c.month}',${c.weekIdx})" style="padding:12px 16px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">
+          Сдать за ${c.month} (неделя ${c.weekIdx+1})
+        </button>`).join('')}
+      </div>
+    </div>`;
+    return;
+  } else {
+    // Нет кандидатов — фоллбэк на curMonth
+    pddMonth = getCurrentMonth();
+    pddWeekIdx = getCurrentWeekIdx();
+  }
+
   const key = getPDDWeekKey(pddEmpIdx, pddWeekIdx);
   
   // Check if already attempted this week - first Firebase, then localStorage
@@ -2576,6 +2679,22 @@ async function openPDD() {
   pddAnswers = new Array(20).fill(-1);
   pddTimeLeft = 20 * 60; // 20 minutes
   
+  renderPDDQuestion();
+  startPDDTimer();
+}
+
+// Запуск теста для конкретного месяца/недели (при границе месяцев)
+async function startPDDFor(month, weekIdx) {
+  pddMonth = month;
+  pddWeekIdx = weekIdx;
+  const body = document.getElementById('pddBody');
+  body.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">📡</div><div style="font-size:15px;font-weight:600">Загрузка вопросов...</div></div>';
+  await loadPDDQuestions();
+  const shuffled = [...PDD_QUESTIONS].sort(() => Math.random() - 0.5);
+  pddQuestions = shuffled.slice(0, 20);
+  pddCurrent = 0;
+  pddAnswers = new Array(20).fill(-1);
+  pddTimeLeft = 20 * 60;
   renderPDDQuestion();
   startPDDTimer();
 }
@@ -2701,19 +2820,30 @@ async function finishPDD() {
   </div>`;
 }
 
+// Ручная установка ПДД — только для admin
+async function adminTogglePDD(value) {
+  if (currentRole !== 'admin') return;
+  if (curEmp < 0 || curWeek < 0) return;
+  await setPDDCheckbox(curEmp, curWeek, value);
+  toast(value ? '✅ ПДД проставлен вручную' : '❌ ПДД снят');
+  renderMaster(); // перерисовываем карточку
+}
+
 async function setPDDCheckbox(empIdx, weekIdx, value) {
   const pddCritIdx = 0;
   const pddItemIdx = 0;
   const month = pddMonth || curMonth; // используем зафиксированный месяц
-  
+
   if (!state.data[month]) return;
   if (!state.data[month][empIdx]) return;
-  if (!state.data[month][empIdx][weekIdx]) state.data[month][empIdx][weekIdx] = emptyWeek();
-  
+  if (!Array.isArray(state.data[month][empIdx][weekIdx])) {
+    state.data[month][empIdx][weekIdx] = emptyWeek();
+  }
+
   const week = state.data[month][empIdx][weekIdx];
-  if (!week[pddCritIdx]) week[pddCritIdx] = Array(CRITERIA[pddCritIdx].items.length).fill(false);
+  if (!Array.isArray(week[pddCritIdx])) week[pddCritIdx] = Array(CRITERIA[pddCritIdx].items.length).fill(false);
   week[pddCritIdx][pddItemIdx] = value;
-  
+
   await save();
 }
 
@@ -3035,8 +3165,8 @@ async function showMasterCabinet(empIdx) {
 
   const sel = document.getElementById('cabMonthSel');
   sel.innerHTML = state.months.map(m => `<option value="${m}">${m}</option>`).join('');
-  // Всегда открываем последний месяц (актуальный)
-  const lastMonth = state.months[state.months.length - 1];
+  // Открываем месяц соответствующий текущей дате
+  const lastMonth = getCurrentMonth();
   sel.value = lastMonth;
   curMonth = lastMonth;
   sel.dataset.empIdx = empIdx;
