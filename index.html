@@ -1130,10 +1130,12 @@ function startRealtimeSync() {
       curWeek = savedWeek;
       // Перерисовываем если открыт admin-вид мастера
       if (currentRole === 'admin' || currentRole === 'director' || currentRole === 'hr' || currentRole === 'senior') {
-        if (document.getElementById('viewMaster').classList.contains('active') && curEmp >= 0) {
+        if (document.getElementById('viewMaster').classList.contains('active') && curEmp >= 0 && curEmp < state.employees.length) {
           renderMaster();
         } else if (document.getElementById('viewBranch').classList.contains('active')) {
           renderBranch();
+        } else if (document.getElementById('viewDash').classList.contains('active')) {
+          renderDash();
         }
       }
     } catch(e) { console.warn('Realtime sync error', e); }
@@ -1215,10 +1217,10 @@ function emptyKPI() { return {schedule:'52', mainHours:0, gosHours:0, vngHours:0
 // ===== CALCULATIONS =====
 function weekAvg(ei, wi) {
   const d = state.data[curMonth];
-  if (!d || !d[ei] || !d[ei][wi]) return null;
+  if (!d || !d[ei] || !Array.isArray(d[ei][wi])) return null;
   const row = d[ei][wi];
   // Check if any checkbox was touched (any true)
-  const anyChecked = row.some(checks => checks.some(v => v));
+  const anyChecked = row.some(checks => Array.isArray(checks) && checks.some(v => v));
   if (!anyChecked) return null;
   // Each criterion = 100/8. Within criterion each item = criterionWeight/items.length
   const critWeight = 100 / CRITERIA.length;
@@ -2510,17 +2512,20 @@ function getPDDWeekKey(empIdx, weekIdx) {
 }
 
 function getCurrentWeekIdx() {
-  // Get current week number based on date
   const now = new Date();
+  const day = now.getDate();
   const dates = getWeekDates(curMonth);
+  // Парсим диапазоны из getWeekDates: "1–5 июл", "6–12 июл" и т.д.
   for (let i = 0; i < dates.length; i++) {
-    if (dates[i]) {
-      const parts = dates[i].split('–');
-      // Simple: return week based on current day of month
+    if (!dates[i] || dates[i] === '—') continue;
+    const match = dates[i].match(/^(\d+)\D+(\d+)/);
+    if (match) {
+      const start = parseInt(match[1]);
+      const end = parseInt(match[2]);
+      if (day >= start && day <= end) return i;
     }
   }
-  // Fallback: week by day of month
-  const day = now.getDate();
+  // Фоллбэк если что-то пошло не так
   if (day <= 7) return 0;
   if (day <= 14) return 1;
   if (day <= 21) return 2;
