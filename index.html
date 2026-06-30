@@ -289,10 +289,13 @@
   /* СТАРШИЙ МПОВ — блокируем всё редактирование кроме чекбоксов KPI и отзывов */
   body[data-role="senior"] .emp-del-btn,
   body[data-role="senior"] .btn-red,
-  body[data-role="senior"] .btn-green:not([onclick*="exportCSV"]),
+  body[data-role="senior"] .btn-green,
   body[data-role="senior"] [onclick*="openEditEmp"],
   body[data-role="senior"] [onclick*="openAddEmpModal"],
   body[data-role="senior"] [onclick*="deleteEmp"],
+  body[data-role="senior"] [onclick*="deleteCurrentEmp"],
+  body[data-role="senior"] [onclick*="resetPDDForEmp"],
+  body[data-role="senior"] [onclick*="adminTogglePDD"],
   body[data-role="senior"] .add-row,
   body[data-role="senior"] .kpi-inp:not(.reviews-inp),
   body[data-role="senior"] .kpi-sel,
@@ -300,6 +303,12 @@
   body[data-role="senior"] .week-cell,
   body[data-role="senior"] [onclick*="openWeek"] { pointer-events:none!important; opacity:.5!important; cursor:default!important; }
   body[data-role="senior"] .weeks-grid .week-btn { pointer-events:none!important; cursor:default!important; }
+  /* Полностью прячем (а не просто блокируем) эти кнопки для старшего МПОВ */
+  body[data-role="senior"] [onclick*="openEditEmp"],
+  body[data-role="senior"] [onclick*="deleteCurrentEmp"],
+  body[data-role="senior"] [onclick*="resetPDDForEmp"],
+  body[data-role="senior"] [onclick*="exportCSV"],
+  body[data-role="senior"] [onclick*="adminTogglePDD"] { display:none!important; }
 
   /* Ручная премия — только для admin */
   body[data-role="master"] .admin-only-field,
